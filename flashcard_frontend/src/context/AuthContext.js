@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth } from '../firebase/config';
+import { auth, db } from '../firebase/config';
 import { 
   GoogleAuthProvider, 
   signInWithPopup,
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -17,7 +18,23 @@ export function useAuth() {
 // PUBLIC_INTERFACE
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [userType, setUserType] = useState('free');
   const [loading, setLoading] = useState(true);
+
+  // Fetch user type from Firestore
+  const fetchUserType = async (uid) => {
+    try {
+      const userDoc = await getDoc(doc(db, `users/${uid}`));
+      if (userDoc.exists()) {
+        setUserType(userDoc.data().type || 'free');
+      } else {
+        setUserType('free');
+      }
+    } catch (error) {
+      console.error('Error fetching user type:', error);
+      setUserType('free');
+    }
+  };
 
   // Handle Google Sign In
   const signInWithGoogle = async () => {
@@ -37,8 +54,13 @@ export function AuthProvider({ children }) {
 
   // Subscribe to auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        await fetchUserType(currentUser.uid);
+      } else {
+        setUserType('free');
+      }
       setLoading(false);
     });
 
@@ -47,6 +69,7 @@ export function AuthProvider({ children }) {
 
   const value = {
     user,
+    userType,
     signInWithGoogle,
     logout
   };

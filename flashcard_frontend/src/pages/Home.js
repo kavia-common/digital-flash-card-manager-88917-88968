@@ -4,6 +4,7 @@ import Modal from 'react-modal';
 import { useAuth } from '../context/AuthContext';
 import { collection, getDocs, addDoc, query, where, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import Navbar from '../components/layout/Navbar';
 
 // Set up Modal for accessibility
 Modal.setAppElement('#root');
@@ -23,6 +24,12 @@ function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState(null);
+  const [theme, setTheme] = useState('light');
+
+  // Apply theme
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     // Redirect if not logged in
@@ -146,150 +153,7 @@ function Home() {
   return (
     <div className="App">
       {/* Navigation */}
-      <nav className="nav">
-        <div className="nav-inner container">
-          <div className="brand">
-            <span className="brand-icon">📘</span>
-            <span className="brand-text">Digital Flash Card Manager</span>
-          </div>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center',
-            gap: '24px'
-          }}>
-            <div style={{
-              display: 'flex',
-              gap: '16px'
-            }}>
-              <Link 
-                to="/practice" 
-                className="btn-ghost"
-                style={{
-                  color: 'var(--muted)',
-                  fontWeight: '600'
-                }}
-              >
-                Practice
-              </Link>
-              <Link 
-                to="/home" 
-                className="btn-ghost"
-                style={{
-                  color: 'var(--primary)',
-                  fontWeight: '600'
-                }}
-              >
-                My Cards
-              </Link>
-            </div>
-            
-            {/* Profile Menu */}
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '20px',
-                  border: '2px solid var(--primary)',
-                  padding: '0',
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  background: 'var(--surface)'
-                }}
-              >
-                {user?.photoURL ? (
-                  <img 
-                    src={user.photoURL} 
-                    alt="Profile" 
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                ) : (
-                  <div 
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'grid',
-                      placeItems: 'center',
-                      background: 'var(--primary)',
-                      color: 'white',
-                      fontSize: '16px',
-                      fontWeight: '600'
-                    }}
-                  >
-                    {user?.email?.[0].toUpperCase() || '?'}
-                  </div>
-                )}
-              </button>
-              
-              {showProfileMenu && (
-                <div 
-                  style={{
-                    position: 'absolute',
-                    top: '100%',
-                    right: '0',
-                    marginTop: '8px',
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: 'var(--radius)',
-                    boxShadow: 'var(--shadow-lg)',
-                    minWidth: '200px',
-                    zIndex: 100
-                  }}
-                >
-                  <div 
-                    style={{
-                      padding: '12px 16px',
-                      borderBottom: '1px solid var(--border-color)'
-                    }}
-                  >
-                    <div style={{ fontWeight: '600' }}>
-                      {user?.displayName || user?.email}
-                    </div>
-                    <div style={{ 
-                      fontSize: '14px',
-                      color: 'var(--muted)'
-                    }}>
-                      {user?.email}
-                    </div>
-                  </div>
-                  <div style={{ padding: '8px 0' }}>
-                    <button 
-                      className="btn-ghost"
-                      style={{
-                        width: '100%',
-                        justifyContent: 'flex-start',
-                        padding: '8px 16px',
-                        color: 'var(--muted)',
-                        fontWeight: '600'
-                      }}
-                    >
-                      Become Premium
-                    </button>
-                    <button 
-                      onClick={handleLogout}
-                      className="btn-ghost"
-                      style={{
-                        width: '100%',
-                        justifyContent: 'flex-start',
-                        padding: '8px 16px',
-                        color: 'var(--error)',
-                        fontWeight: '600'
-                      }}
-                    >
-                      Sign out
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar theme={theme} onToggleTheme={() => setTheme(theme === 'light' ? 'dark' : 'light')} />
 
       {/* Main Content */}
       <main className="section">
@@ -317,94 +181,6 @@ function Home() {
               Create New Subject
             </button>
           </div>
-
-          {/* Create Subject Modal */}
-          <Modal
-            isOpen={isModalOpen}
-            onRequestClose={() => {
-              setIsModalOpen(false);
-              setNewSubjectName('');
-              setError('');
-            }}
-            style={modalStyles}
-            contentLabel="Create New Subject"
-          >
-            <h2 style={{ 
-              margin: '0 0 16px',
-              fontSize: '24px',
-              fontWeight: '700'
-            }}>
-              Create New Subject
-            </h2>
-            <form onSubmit={handleCreateSubject}>
-              <div style={{ marginBottom: '16px' }}>
-                <label 
-                  htmlFor="subjectName" 
-                  style={{ 
-                    display: 'block',
-                    marginBottom: '8px',
-                    fontWeight: '600'
-                  }}
-                >
-                  Subject Name
-                </label>
-                <input
-                  id="subjectName"
-                  type="text"
-                  value={newSubjectName}
-                  onChange={(e) => setNewSubjectName(e.target.value)}
-                  placeholder="Enter subject name"
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '12px',
-                    border: '1px solid var(--muted)',
-                    background: 'var(--surface)',
-                    color: 'var(--text)',
-                  }}
-                  required
-                />
-              </div>
-              
-              {error && (
-                <div style={{ 
-                  padding: '12px',
-                  marginBottom: '16px',
-                  borderRadius: '12px',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  color: 'var(--error)',
-                }}>
-                  {error}
-                </div>
-              )}
-              
-              <div style={{
-                display: 'flex',
-                gap: '12px',
-                justifyContent: 'flex-end'
-              }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    setNewSubjectName('');
-                    setError('');
-                  }}
-                  className="btn-ghost"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Creating...' : 'Create Subject'}
-                </button>
-              </div>
-            </form>
-          </Modal>
 
           {/* Subjects Grid */}
           <div 
@@ -497,6 +273,94 @@ function Home() {
               </div>
             )}
           </div>
+
+          {/* Create Subject Modal */}
+          <Modal
+            isOpen={isModalOpen}
+            onRequestClose={() => {
+              setIsModalOpen(false);
+              setNewSubjectName('');
+              setError('');
+            }}
+            style={modalStyles}
+            contentLabel="Create New Subject"
+          >
+            <h2 style={{ 
+              margin: '0 0 16px',
+              fontSize: '24px',
+              fontWeight: '700'
+            }}>
+              Create New Subject
+            </h2>
+            <form onSubmit={handleCreateSubject}>
+              <div style={{ marginBottom: '16px' }}>
+                <label 
+                  htmlFor="subjectName" 
+                  style={{ 
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontWeight: '600'
+                  }}
+                >
+                  Subject Name
+                </label>
+                <input
+                  id="subjectName"
+                  type="text"
+                  value={newSubjectName}
+                  onChange={(e) => setNewSubjectName(e.target.value)}
+                  placeholder="Enter subject name"
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    border: '1px solid var(--muted)',
+                    background: 'var(--surface)',
+                    color: 'var(--text)',
+                  }}
+                  required
+                />
+              </div>
+              
+              {error && (
+                <div style={{ 
+                  padding: '12px',
+                  marginBottom: '16px',
+                  borderRadius: '12px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  color: 'var(--error)',
+                }}>
+                  {error}
+                </div>
+              )}
+              
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                justifyContent: 'flex-end'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setNewSubjectName('');
+                    setError('');
+                  }}
+                  className="btn-ghost"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Creating...' : 'Create Subject'}
+                </button>
+              </div>
+            </form>
+          </Modal>
 
           {/* Delete Confirmation Modal */}
           <Modal

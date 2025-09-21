@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import Modal from 'react-modal';
 import { useAuth } from '../context/AuthContext';
 import FlashcardStats from '../components/flashcard/FlashcardStats';
+import Navbar from '../components/layout/Navbar';
 import { 
   collection, 
   getDocs, 
@@ -51,6 +52,12 @@ function SubjectView() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedFrontText, setEditedFrontText] = useState('');
   const [editedBackText, setEditedBackText] = useState('');
+  const [theme, setTheme] = useState('light');
+
+  // Apply theme
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   // Helper functions for navigation
   const getFocusedCardIndex = () => {
@@ -320,42 +327,7 @@ function SubjectView() {
 
   return (
     <div className="App">
-      {/* Navigation */}
-      <nav className="nav">
-        <div className="nav-inner container">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Link 
-              to="/home" 
-              className="btn-ghost"
-              style={{
-                padding: '8px',
-                minWidth: 'unset',
-                color: 'var(--text)'
-              }}
-              aria-label="Back to home"
-            >
-              ← Back
-            </Link>
-            <h1 style={{ 
-              margin: 0,
-              fontSize: '18px',
-              fontWeight: '600'
-            }}>
-              {subject?.title || 'Loading...'}
-            </h1>
-          </div>
-          <Link
-            to={`/subjects/${subjectId}/practice/${selectedTopic?.id || 'all'}`}
-            className="btn-primary"
-            style={{
-              padding: '8px 16px',
-              fontWeight: '600'
-            }}
-          >
-            Practice
-          </Link>
-        </div>
-      </nav>
+      <Navbar theme={theme} onToggleTheme={() => setTheme(theme === 'light' ? 'dark' : 'light')} />
 
       {/* Main Content with Sidebar */}
       <div style={{

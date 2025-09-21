@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Navbar from '../components/layout/Navbar';
 import { collection, getDocs, query, where, getDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
@@ -22,6 +23,12 @@ function PracticeView() {
   const [error, setError] = useState('');
   const [answerStats, setAnswerStats] = useState({});
   const [answerFeedback, setAnswerFeedback] = useState(null);
+  const [theme, setTheme] = useState('light');
+
+  // Apply theme
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     if (!user) {
@@ -130,26 +137,7 @@ function PracticeView() {
   if (isLoading) {
     return (
       <div className="App">
-        <nav className="nav">
-          <div className="nav-inner container">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <Link 
-                to={`/subjects/${subjectId}`}
-                className="btn-ghost"
-                style={{
-                  padding: '8px',
-                  minWidth: 'unset',
-                  color: 'var(--text)'
-                }}
-              >
-                ← Back
-              </Link>
-              <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
-                Loading...
-              </h1>
-            </div>
-          </div>
-        </nav>
+        <Navbar theme={theme} onToggleTheme={() => setTheme(theme === 'light' ? 'dark' : 'light')} />
         <div style={{
           display: 'grid',
           gridTemplateColumns: '280px 1fr',
@@ -179,26 +167,7 @@ function PracticeView() {
   if (error) {
     return (
       <div className="App">
-        <nav className="nav">
-          <div className="nav-inner container">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <Link 
-                to={`/subjects/${subjectId}`}
-                className="btn-ghost"
-                style={{
-                  padding: '8px',
-                  minWidth: 'unset',
-                  color: 'var(--text)'
-                }}
-              >
-                ← Back
-              </Link>
-              <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
-                Error
-              </h1>
-            </div>
-          </div>
-        </nav>
+        <Navbar theme={theme} onToggleTheme={() => setTheme(theme === 'light' ? 'dark' : 'light')} />
         <div style={{
           display: 'grid',
           gridTemplateColumns: '280px 1fr',
@@ -235,26 +204,7 @@ function PracticeView() {
   if (flashcards.length === 0) {
     return (
       <div className="App">
-        <nav className="nav">
-          <div className="nav-inner container">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <Link 
-                to={`/subjects/${subjectId}`}
-                className="btn-ghost"
-                style={{
-                  padding: '8px',
-                  minWidth: 'unset',
-                  color: 'var(--text)'
-                }}
-              >
-                ← Back
-              </Link>
-              <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
-                {subject?.title || 'Practice'}
-              </h1>
-            </div>
-          </div>
-        </nav>
+        <Navbar theme={theme} onToggleTheme={() => setTheme(theme === 'light' ? 'dark' : 'light')} />
         <div style={{
           display: 'grid',
           gridTemplateColumns: '280px 1fr',
@@ -296,26 +246,7 @@ function PracticeView() {
 
   return (
     <div className="App">
-      <nav className="nav">
-        <div className="nav-inner container">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Link 
-              to={`/subjects/${subjectId}`}
-              className="btn-ghost"
-              style={{
-                padding: '8px',
-                minWidth: 'unset',
-                color: 'var(--text)'
-              }}
-            >
-              ← Back
-            </Link>
-            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
-              {subject?.title || 'Practice'} ({currentCardIndex + 1}/{flashcards.length})
-            </h1>
-          </div>
-        </div>
-      </nav>
+      <Navbar theme={theme} onToggleTheme={() => setTheme(theme === 'light' ? 'dark' : 'light')} />
 
       <div style={{
         display: 'grid',
