@@ -9,7 +9,10 @@ import Button from '../components/ui/Button';
 function CreateTopicModal({
   isOpen,
   onClose,
-  onSubmit
+  onSubmit,
+  userRole,
+  topicCount = 0,
+  onUpgradeClick
 }) {
   const [topicName, setTopicName] = useState('');
   const [error, setError] = useState('');
@@ -21,6 +24,11 @@ function CreateTopicModal({
     
     if (!topicName.trim()) {
       setError('Please enter a topic name');
+      return;
+    }
+
+    if (userRole === 'free' && topicCount >= 1) {
+      onUpgradeClick?.();
       return;
     }
 

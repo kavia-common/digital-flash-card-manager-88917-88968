@@ -10,7 +10,10 @@ function CreateSubjectModal({
   isOpen,
   onClose,
   onSubmit,
-  initialValue = ''
+  initialValue = '',
+  userRole,
+  subjectCount = 0,
+  onUpgradeClick
 }) {
   const [subjectName, setSubjectName] = useState(initialValue);
   const [error, setError] = useState('');
@@ -22,6 +25,11 @@ function CreateSubjectModal({
     
     if (!subjectName.trim()) {
       setError('Please enter a subject name');
+      return;
+    }
+
+    if (userRole === 'free' && subjectCount >= 3) {
+      onUpgradeClick?.();
       return;
     }
 
@@ -71,6 +79,16 @@ function CreateSubjectModal({
             }}
             required
           />
+
+          {userRole === 'free' && (
+            <div style={{
+              marginTop: '8px',
+              fontSize: '14px',
+              color: 'var(--muted)'
+            }}>
+              {subjectCount}/3 subjects used (Free Plan)
+            </div>
+          )}
         </div>
         
         {error && (

@@ -10,7 +10,10 @@ function CreateFlashcardModal({
   isOpen,
   onClose,
   onSubmit,
-  initialData = null
+  initialData = null,
+  userRole,
+  cardCount = 0,
+  onUpgradeClick
 }) {
   const [frontText, setFrontText] = useState(initialData?.frontText || '');
   const [backText, setBackText] = useState(initialData?.backText || '');
@@ -27,6 +30,11 @@ function CreateFlashcardModal({
     }
     if (!backText.trim()) {
       setError('Please provide text for the back side');
+      return;
+    }
+
+    if (userRole === 'free' && cardCount >= 5 && !initialData) {
+      onUpgradeClick?.();
       return;
     }
 
