@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext';
 import './App.css';
 import Login from './pages/Login';
 import Home from './pages/Home';
+import SubjectView from './pages/SubjectView';
 
 /**
  * PUBLIC_INTERFACE
@@ -174,6 +175,7 @@ function App() {
       <Route path="/home" element={<Home />} />
       <Route path="/practice" element={<Navigate to="/home" />} /> {/* Placeholder */}
       <Route path="/subjects/new" element={<Navigate to="/home" />} /> {/* Placeholder */}
+      <Route path="/subjects/:subjectId" element={<SubjectView />} />
     </Routes>
   );
 }
