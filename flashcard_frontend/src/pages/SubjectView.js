@@ -205,11 +205,36 @@ function SubjectView() {
       {/* Navigation */}
       <nav className="nav">
         <div className="nav-inner container">
-          <Link to="/home" className="brand">
-            <span className="brand-icon">📘</span>
-            <span className="brand-text">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <Link 
+              to="/home" 
+              className="btn-ghost"
+              style={{
+                padding: '8px',
+                minWidth: 'unset',
+                color: 'var(--text)'
+              }}
+              aria-label="Back to home"
+            >
+              ← Back
+            </Link>
+            <h1 style={{ 
+              margin: 0,
+              fontSize: '18px',
+              fontWeight: '600'
+            }}>
               {subject?.title || 'Loading...'}
-            </span>
+            </h1>
+          </div>
+          <Link
+            to={`/practice?subjectId=${subjectId}`}
+            className="btn-primary"
+            style={{
+              padding: '8px 16px',
+              fontWeight: '600'
+            }}
+          >
+            Practice
           </Link>
         </div>
       </nav>
