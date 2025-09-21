@@ -120,7 +120,10 @@ function SubjectView() {
         frontText: frontText.trim(),
         backText: backText.trim(),
         topicId: selectedTopic?.id || null,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        correctCount: 0,
+        incorrectCount: 0,
+        totalAttempts: 0
       };
 
       const docRef = await addDoc(flashcardsRef, newFlashcard);
@@ -356,6 +359,7 @@ function SubjectView() {
                       flexDirection: 'column',
                       position: 'relative',
                       minHeight: '200px',
+                      cursor: 'pointer',
                     }}
                   >
                     <div style={{
@@ -410,6 +414,37 @@ function SubjectView() {
                             <span>Empty Card</span>
                           </div>
                         )}
+                      </div>
+                      {/* VS Bar for Right/Wrong Statistics */}
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '12px',
+                        left: '16px',
+                        right: '16px',
+                        height: '6px',
+                        background: '#d1d5db',
+                        borderRadius: '3px',
+                        overflow: 'hidden',
+                      }}>
+                        {/* Using mock stats for now - to be replaced with real stats */}
+                        <div style={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: '60%', // Mock percentage
+                          background: '#F59E0B',
+                          transition: 'width 0.3s ease-in-out',
+                        }} />
+                        <div style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: '20%', // Mock percentage
+                          background: '#EF4444',
+                          transition: 'width 0.3s ease-in-out',
+                        }} />
                       </div>
                     </div>
                   </div>
