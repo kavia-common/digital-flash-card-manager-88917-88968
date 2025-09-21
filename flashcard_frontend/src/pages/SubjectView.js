@@ -411,18 +411,56 @@ function SubjectView() {
               All Topics
             </button>
             {topics.map(topic => (
-              <button
+              <div
                 key={topic.id}
-                onClick={() => setSelectedTopic(topic)}
-                className="btn-ghost"
                 style={{
-                  justifyContent: 'flex-start',
-                  fontWeight: '600',
-                  color: selectedTopic?.id === topic.id ? 'var(--primary)' : 'var(--text)'
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
                 }}
               >
-                {topic.title}
-              </button>
+                <button
+                  onClick={() => setSelectedTopic(topic)}
+                  className="btn-ghost"
+                  style={{
+                    flex: 1,
+                    justifyContent: 'flex-start',
+                    fontWeight: '600',
+                    color: selectedTopic?.id === topic.id ? 'var(--primary)' : 'var(--text)'
+                  }}
+                >
+                  {topic.title}
+                </button>
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Are you sure you want to delete "${topic.title}"?`)) {
+                      try {
+                        await deleteDoc(doc(db, `users/${user.uid}/subjects/${subjectId}/topics/${topic.id}`));
+                        setTopics(prev => prev.filter(t => t.id !== topic.id));
+                        if (selectedTopic?.id === topic.id) {
+                          setSelectedTopic(null);
+                        }
+                      } catch (error) {
+                        console.error("Error deleting topic:", error);
+                      }
+                    }
+                  }}
+                  className="btn-ghost"
+                  style={{
+                    padding: '6px',
+                    minWidth: 'unset',
+                    color: 'var(--error)',
+                    opacity: 0,
+                    transition: 'opacity 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => e.target.style.opacity = '1'}
+                  onMouseLeave={(e) => e.target.style.opacity = '0'}
+                >
+                  🗑️
+                </button>
+              </div>
             ))}
           </div>
         </aside>
