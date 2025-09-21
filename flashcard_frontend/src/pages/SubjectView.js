@@ -357,33 +357,94 @@ function SubjectView() {
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '12px'
+                      position: 'relative',
+                      overflow: 'hidden',
+                      minHeight: '200px',
+                      background: card.frontImageUrl ? 'transparent' : 'var(--surface)',
                     }}
                   >
+                    {/* Background Image */}
+                    {card.frontImageUrl && (
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        backgroundImage: `url(${card.frontImageUrl})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        zIndex: 0,
+                        opacity: 0.85,
+                      }} />
+                    )}
+                    
+                    {/* Content Overlay */}
                     <div style={{
+                      position: 'relative',
+                      zIndex: 1,
+                      height: '100%',
+                      padding: '16px',
                       display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start'
+                      flexDirection: 'column',
+                      background: card.frontImageUrl 
+                        ? 'linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.7) 100%)'
+                        : 'transparent',
                     }}>
-                      <div className="feature-icon">
-                        📝
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                        marginBottom: '8px'
+                      }}>
+                        <button 
+                          className="btn-ghost"
+                          style={{
+                            padding: '6px',
+                            minWidth: 'unset',
+                            color: card.frontImageUrl ? '#fff' : 'var(--text)',
+                            background: card.frontImageUrl ? 'rgba(0,0,0,0.3)' : 'transparent',
+                          }}
+                        >
+                          ✏️
+                        </button>
                       </div>
-                      <button 
-                        className="btn-ghost"
-                        style={{
-                          padding: '6px',
-                          minWidth: 'unset'
-                        }}
-                      >
-                        ✏️
-                      </button>
-                    </div>
-                    <div>
-                      <h3 className="feature-title">
-                        {card.question || 'Question'}
-                      </h3>
-                      <p className="feature-desc">
-                        {card.answer || 'Answer'}
+                      
+                      {/* Front Text */}
+                      {card.frontText && (
+                        <h3 className="feature-title" style={{
+                          margin: '0 0 8px',
+                          color: card.frontImageUrl ? '#fff' : 'var(--text)',
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          textShadow: card.frontImageUrl ? '0 2px 4px rgba(0,0,0,0.3)' : 'none',
+                        }}>
+                          {card.frontText}
+                        </h3>
+                      )}
+                      
+                      {/* Empty State */}
+                      {!card.frontText && !card.frontImageUrl && (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          color: 'var(--muted)',
+                          marginBottom: '8px',
+                        }}>
+                          <div className="feature-icon">📝</div>
+                          <span>Empty Card</span>
+                        </div>
+                      )}
+                      
+                      {/* Back Text Preview */}
+                      <p className="feature-desc" style={{
+                        margin: '0',
+                        color: card.frontImageUrl ? 'rgba(255,255,255,0.8)' : 'var(--muted)',
+                        fontSize: '14px',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}>
+                        {card.backText || 'No content'}
                       </p>
                     </div>
                   </div>
