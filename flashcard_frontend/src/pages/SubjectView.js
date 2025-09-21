@@ -25,7 +25,7 @@ Modal.setAppElement('#root');
  * Subject view component showing topics in sidebar and flashcards in main area
  */
 function SubjectView() {
-  const { user } = useAuth();
+  const { user, userType } = useAuth();
   const navigate = useNavigate();
   const { subjectId } = useParams();
   
@@ -447,9 +447,75 @@ function SubjectView() {
               alignItems: 'center',
               marginBottom: '24px'
             }}>
-              <h1 className="section-title">
-                {selectedTopic ? selectedTopic.title : 'All Flashcards'}
-              </h1>
+              <div>
+                {/* Show progress bar for free users */}
+                {userType === 'free' && flashcards.length > 0 && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ 
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '8px'
+                    }}>
+                      <span style={{
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: 'var(--primary)'
+                      }}>
+                        {(() => {
+                          const totalCorrect = flashcards.reduce((sum, card) => sum + (card.correctCount || 0), 0);
+                          const totalAttempts = flashcards.reduce((sum, card) => 
+                            sum + ((card.correctCount || 0) + (card.incorrectCount || 0)), 0);
+                          const successRate = totalAttempts > 0 
+                            ? Math.round((totalCorrect / totalAttempts) * 100) 
+                            : 0;
+                          return `Success Rate: ${successRate}%`;
+                        })()}
+                      </span>
+                    </div>
+                    <div style={{
+                      height: '6px',
+                      background: 'color-mix(in srgb, var(--text) 10%, transparent)',
+                      borderRadius: '3px',
+                      overflow: 'hidden',
+                    }}>
+                      {(() => {
+                        const totalCorrect = flashcards.reduce((sum, card) => sum + (card.correctCount || 0), 0);
+                        const totalIncorrect = flashcards.reduce((sum, card) => sum + (card.incorrectCount || 0), 0);
+                        const total = totalCorrect + totalIncorrect;
+                        const correctPercentage = total > 0 ? (totalCorrect / total) * 100 : 0;
+                        const incorrectPercentage = total > 0 ? (totalIncorrect / total) * 100 : 0;
+                        
+                        return (
+                          <>
+                            <div style={{
+                              position: 'absolute',
+                              left: 0,
+                              top: 0,
+                              bottom: 0,
+                              width: `${correctPercentage}%`,
+                              background: 'var(--success)',
+                              transition: 'width 0.3s ease-in-out',
+                            }} />
+                            <div style={{
+                              position: 'absolute',
+                              right: 0,
+                              top: 0,
+                              bottom: 0,
+                              width: `${incorrectPercentage}%`,
+                              background: 'var(--error)',
+                              transition: 'width 0.3s ease-in-out',
+                            }} />
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+                <h1 className="section-title">
+                  {selectedTopic ? selectedTopic.title : 'All Flashcards'}
+                </h1>
+              </div>
               {topics.length === 0 && (
                 <button 
                   className="btn-primary"
@@ -568,10 +634,7 @@ function SubjectView() {
                           </div>
                         )}
                       </div>
-                      <FlashcardStats 
-                        correct={card.correctCount || 0}
-                        incorrect={card.incorrectCount || 0}
-                      />
+                      {/* Removed individual card stats */}
                     </div>
                   </div>
                 ))
