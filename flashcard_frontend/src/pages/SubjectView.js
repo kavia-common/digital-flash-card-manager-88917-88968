@@ -9,7 +9,9 @@ import {
   query, 
   where,
   getDoc,
-  doc
+  doc,
+  updateDoc,
+  deleteDoc
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
@@ -39,6 +41,77 @@ function SubjectView() {
   const [backText, setBackText] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Focused flashcard modal state
+  const [focusedCard, setFocusedCard] = useState(null);
+  const [isFocusModalOpen, setIsFocusModalOpen] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedFrontText, setEditedFrontText] = useState('');
+  const [editedBackText, setEditedBackText] = useState('');
+
+  // Helper functions for navigation
+  const getFocusedCardIndex = () => {
+    return flashcards.findIndex(card => card.id === focusedCard?.id);
+  };
+
+  const navigateCards = (direction) => {
+    const currentIndex = getFocusedCardIndex();
+    const newIndex = direction === 'next' 
+      ? (currentIndex + 1) % flashcards.length
+      : (currentIndex - 1 + flashcards.length) % flashcards.length;
+    setFocusedCard(flashcards[newIndex]);
+    setIsFlipped(false);
+  };
+
+  const handleEditCard = async () => {
+    if (!focusedCard) return;
+    setIsSubmitting(true);
+
+    try {
+      const cardRef = doc(db, `users/${user.uid}/subjects/${subjectId}/flashcards/${focusedCard.id}`);
+      await updateDoc(cardRef, {
+        frontText: editedFrontText.trim(),
+        backText: editedBackText.trim()
+      });
+
+      setFlashcards(prev => prev.map(card => 
+        card.id === focusedCard.id 
+          ? { ...card, frontText: editedFrontText.trim(), backText: editedBackText.trim() }
+          : card
+      ));
+
+      setIsEditMode(false);
+      setFocusedCard(prev => ({
+        ...prev,
+        frontText: editedFrontText.trim(),
+        backText: editedBackText.trim()
+      }));
+    } catch (error) {
+      console.error("Error updating flashcard:", error);
+      setError('Failed to update flashcard. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteCard = async () => {
+    if (!focusedCard) return;
+    setIsSubmitting(true);
+
+    try {
+      const cardRef = doc(db, `users/${user.uid}/subjects/${subjectId}/flashcards/${focusedCard.id}`);
+      await deleteDoc(cardRef);
+      setFlashcards(prev => prev.filter(card => card.id !== focusedCard.id));
+      setIsFocusModalOpen(false);
+      setFocusedCard(null);
+    } catch (error) {
+      console.error("Error deleting flashcard:", error);
+      setError('Failed to delete flashcard. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -183,6 +256,29 @@ function SubjectView() {
 
   // Custom styles for Modal following Ocean Professional theme
   const modalStyles = {
+    focusedCard: {
+      content: {
+        top: '50%',
+        left: '50%',
+        right: 'auto',
+        bottom: 'auto',
+        transform: 'translate(-50%, -50%)',
+        width: '90%',
+        maxWidth: '600px',
+        maxHeight: '80vh',
+        padding: '0',
+        borderRadius: 'var(--radius)',
+        border: '1px solid var(--border-color)',
+        background: 'var(--surface)',
+        boxShadow: 'var(--shadow-lg)',
+        overflow: 'hidden',
+      },
+      overlay: {
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        backdropFilter: 'blur(8px)',
+        zIndex: 1000,
+      },
+    },
     content: {
       top: '50%',
       left: '50%',
@@ -361,6 +457,13 @@ function SubjectView() {
                       minHeight: '200px',
                       cursor: 'pointer',
                     }}
+                    onClick={() => {
+                      setFocusedCard(card);
+                      setIsFocusModalOpen(true);
+                      setIsFlipped(false);
+                      setEditedFrontText(card.frontText);
+                      setEditedBackText(card.backText);
+                    }}
                   >
                     <div style={{
                       position: 'relative',
@@ -422,7 +525,7 @@ function SubjectView() {
                         left: '16px',
                         right: '16px',
                         height: '6px',
-                        background: '#d1d5db',
+                        background: '#eee',
                         borderRadius: '3px',
                         overflow: 'hidden',
                       }}>
@@ -433,7 +536,7 @@ function SubjectView() {
                           top: 0,
                           bottom: 0,
                           width: '60%', // Mock percentage
-                          background: '#F59E0B',
+                          background: '#00ff00',
                           transition: 'width 0.3s ease-in-out',
                         }} />
                         <div style={{
@@ -441,8 +544,8 @@ function SubjectView() {
                           right: 0,
                           top: 0,
                           bottom: 0,
-                          width: '20%', // Mock percentage
-                          background: '#EF4444',
+                          width: '40%', // Mock percentage
+                          background: '#ff0000',
                           transition: 'width 0.3s ease-in-out',
                         }} />
                       </div>
@@ -694,6 +797,251 @@ function SubjectView() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Focused Flashcard Modal */}
+      <Modal
+        isOpen={isFocusModalOpen}
+        onRequestClose={() => {
+          setIsFocusModalOpen(false);
+          setFocusedCard(null);
+          setIsFlipped(false);
+          setIsEditMode(false);
+          setError('');
+        }}
+        style={modalStyles.focusedCard}
+        contentLabel="View Flashcard"
+      >
+        {focusedCard && (
+          <div style={{
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            perspective: '1000px',
+          }}>
+            {/* Card Container */}
+            <div
+              style={{
+                position: 'relative',
+                width: '100%',
+                minHeight: '400px',
+                transformStyle: 'preserve-3d',
+                transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0)',
+                transition: 'transform 0.6s',
+              }}
+              onMouseEnter={() => !isEditMode && setIsFlipped(true)}
+              onMouseLeave={() => !isEditMode && setIsFlipped(false)}
+            >
+              {/* Front Side */}
+              <div style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                backfaceVisibility: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              }}>
+                <div style={{
+                  padding: '24px',
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  background: 'var(--surface)',
+                }}>
+                  {isEditMode ? (
+                    <input
+                      type="text"
+                      value={editedFrontText}
+                      onChange={(e) => setEditedFrontText(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        fontSize: '24px',
+                        textAlign: 'center',
+                        border: '1px solid var(--muted)',
+                        borderRadius: 'var(--radius)',
+                        background: 'var(--surface)',
+                        color: 'var(--text)',
+                      }}
+                    />
+                  ) : (
+                    <h2 style={{
+                      margin: 0,
+                      fontSize: '24px',
+                      fontWeight: '600',
+                      textAlign: 'center',
+                    }}>
+                      {focusedCard.frontText}
+                    </h2>
+                  )}
+                </div>
+              </div>
+
+              {/* Back Side */}
+              <div style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                backfaceVisibility: 'hidden',
+                transform: 'rotateY(180deg)',
+                display: 'flex',
+                flexDirection: 'column',
+              }}>
+                <div style={{
+                  padding: '24px',
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  background: 'var(--surface)',
+                }}>
+                  {isEditMode ? (
+                    <textarea
+                      value={editedBackText}
+                      onChange={(e) => setEditedBackText(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        fontSize: '18px',
+                        minHeight: '200px',
+                        textAlign: 'center',
+                        border: '1px solid var(--muted)',
+                        borderRadius: 'var(--radius)',
+                        background: 'var(--surface)',
+                        color: 'var(--text)',
+                        resize: 'vertical',
+                      }}
+                    />
+                  ) : (
+                    <p style={{
+                      margin: 0,
+                      fontSize: '18px',
+                      textAlign: 'center',
+                    }}>
+                      {focusedCard.backText}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation and Action Buttons */}
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '24px',
+              transform: 'translateY(-50%)',
+              zIndex: 2,
+            }}>
+              <button
+                onClick={() => navigateCards('prev')}
+                className="btn-ghost"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '20px',
+                  padding: 0,
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: '24px',
+                }}
+                aria-label="Previous card"
+              >
+                ←
+              </button>
+            </div>
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              right: '24px',
+              transform: 'translateY(-50%)',
+              zIndex: 2,
+            }}>
+              <button
+                onClick={() => navigateCards('next')}
+                className="btn-ghost"
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '20px',
+                  padding: 0,
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: '24px',
+                }}
+                aria-label="Next card"
+              >
+                →
+              </button>
+            </div>
+
+            {/* Bottom Action Bar */}
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              padding: '16px 24px',
+              background: 'var(--surface)',
+              borderTop: '1px solid var(--border-color)',
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '12px',
+              zIndex: 2,
+            }}>
+              {isEditMode ? (
+                <>
+                  <button
+                    onClick={() => {
+                      setIsEditMode(false);
+                      setEditedFrontText(focusedCard.frontText);
+                      setEditedBackText(focusedCard.backText);
+                    }}
+                    className="btn-ghost"
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleEditCard}
+                    className="btn-primary"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      setIsEditMode(true);
+                      setIsFlipped(false);
+                    }}
+                    className="btn-ghost"
+                    style={{
+                      color: 'var(--primary)',
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={handleDeleteCard}
+                    className="btn-ghost"
+                    style={{
+                      color: 'var(--error)',
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Deleting...' : 'Delete'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
