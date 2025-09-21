@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import Modal from 'react-modal';
 import { useAuth } from '../context/AuthContext';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
+
+// Set up Modal for accessibility
+Modal.setAppElement('#root');
 
 /**
  * PUBLIC_INTERFACE
@@ -13,6 +17,10 @@ function Home() {
   const navigate = useNavigate();
   const [subjects, setSubjects] = useState([]);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newSubjectName, setNewSubjectName] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     // Redirect if not logged in
@@ -45,6 +53,69 @@ function Home() {
     } catch (error) {
       console.error("Error logging out:", error);
     }
+  };
+
+  const handleCreateSubject = async (e) => {
+    e.preventDefault();
+    setError('');
+    
+    if (!newSubjectName.trim()) {
+      setError('Please enter a subject name');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Check for duplicate subject names
+      const subjectsRef = collection(db, `users/${user.uid}/subjects`);
+      const q = query(subjectsRef, where("title", "==", newSubjectName.trim()));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        setError('A subject with this name already exists');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Create new subject
+      const newSubject = {
+        title: newSubjectName.trim(),
+        createdAt: new Date().toISOString(),
+        cardCount: 0
+      };
+
+      const docRef = await addDoc(subjectsRef, newSubject);
+      setSubjects(prev => [...prev, { id: docRef.id, ...newSubject }]);
+      setNewSubjectName('');
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error creating subject:", error);
+      setError('Failed to create subject. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Custom styles for Modal following Ocean Professional theme
+  const modalStyles = {
+    content: {
+      top: '50%',
+      left: '50%',
+      right: 'auto',
+      bottom: 'auto',
+      transform: 'translate(-50%, -50%)',
+      maxWidth: '400px',
+      width: '90%',
+      padding: '24px',
+      borderRadius: 'var(--radius)',
+      border: '1px solid var(--border-color)',
+      background: 'var(--surface)',
+      boxShadow: 'var(--shadow-lg)',
+    },
+    overlay: {
+      backgroundColor: 'rgba(0, 0, 0, 0.75)',
+      zIndex: 1000,
+    },
   };
 
   return (
@@ -208,8 +279,8 @@ function Home() {
               <h1 className="section-title">My Subjects</h1>
               <p className="section-subtitle">Create and manage your study subjects</p>
             </div>
-            <Link 
-              to="/subjects/new" 
+            <button 
+              onClick={() => setIsModalOpen(true)} 
               className="btn-primary btn-lg"
               style={{
                 display: 'flex',
@@ -219,8 +290,96 @@ function Home() {
             >
               <span style={{ fontSize: '20px' }}>+</span>
               Create New Subject
-            </Link>
+            </button>
           </div>
+
+          {/* Create Subject Modal */}
+          <Modal
+            isOpen={isModalOpen}
+            onRequestClose={() => {
+              setIsModalOpen(false);
+              setNewSubjectName('');
+              setError('');
+            }}
+            style={modalStyles}
+            contentLabel="Create New Subject"
+          >
+            <h2 style={{ 
+              margin: '0 0 16px',
+              fontSize: '24px',
+              fontWeight: '700'
+            }}>
+              Create New Subject
+            </h2>
+            <form onSubmit={handleCreateSubject}>
+              <div style={{ marginBottom: '16px' }}>
+                <label 
+                  htmlFor="subjectName" 
+                  style={{ 
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontWeight: '600'
+                  }}
+                >
+                  Subject Name
+                </label>
+                <input
+                  id="subjectName"
+                  type="text"
+                  value={newSubjectName}
+                  onChange={(e) => setNewSubjectName(e.target.value)}
+                  placeholder="Enter subject name"
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    border: '1px solid var(--muted)',
+                    background: 'var(--surface)',
+                    color: 'var(--text)',
+                  }}
+                  required
+                />
+              </div>
+              
+              {error && (
+                <div style={{ 
+                  padding: '12px',
+                  marginBottom: '16px',
+                  borderRadius: '12px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  color: 'var(--error)',
+                }}>
+                  {error}
+                </div>
+              )}
+              
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                justifyContent: 'flex-end'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setNewSubjectName('');
+                    setError('');
+                  }}
+                  className="btn-ghost"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Creating...' : 'Create Subject'}
+                </button>
+              </div>
+            </form>
+          </Modal>
 
           {/* Subjects Grid */}
           <div 
@@ -286,9 +445,12 @@ function Home() {
                 <p style={{ margin: '0 0 24px' }}>
                   Create your first subject to start learning
                 </p>
-                <Link to="/subjects/new" className="btn-primary">
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="btn-primary"
+                >
                   Create New Subject
-                </Link>
+                </button>
               </div>
             )}
           </div>
