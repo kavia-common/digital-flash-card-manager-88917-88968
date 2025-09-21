@@ -1,12 +1,32 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * PUBLIC_INTERFACE
  * Login page component that handles user authentication
- * with Ocean Professional theme styling
+ * with Ocean Professional theme styling and Google Sign-in
  */
 function Login() {
+  const { signInWithGoogle } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setError('');
+      setLoading(true);
+      await signInWithGoogle();
+      navigate('/');
+    } catch (err) {
+      setError('Failed to sign in with Google');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="App">
       <nav className="nav">
@@ -75,14 +95,28 @@ function Login() {
                   placeholder="••••••••"
                 />
               </div>
+              {error && (
+                <div style={{ 
+                  padding: '12px',
+                  borderRadius: '12px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  color: 'var(--error)',
+                  textAlign: 'center',
+                  marginBottom: '16px'
+                }}>
+                  {error}
+                </div>
+              )}
               <button 
-                type="submit" 
+                onClick={handleGoogleSignIn}
+                type="button" 
                 className="btn-primary btn-lg"
                 style={{ width: '100%', marginTop: '8px' }}
+                disabled={loading}
               >
-                Create Account
+                {loading ? 'Signing in...' : 'Sign in with Google'}
               </button>
-              <p style={{ textAlign: 'center', color: 'var(--muted)', margin: '8px 0' }}>
+              <p style={{ textAlign: 'center', color: 'var(--muted)', margin: '16px 0' }}>
                 Already have an account?{' '}
                 <Link to="/login" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: '600' }}>
                   Sign in
