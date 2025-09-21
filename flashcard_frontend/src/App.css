@@ -3,7 +3,7 @@
 :root {
   --primary: #2563EB;   /* Blue */
   --secondary: #F59E0B; /* Amber */
-  --success: #F59E0B;
+  --success: #00ff00;
   --error: #EF4444;
   --bg: #f9fafb;        /* background */
   --surface: #ffffff;   /* cards/surfaces */

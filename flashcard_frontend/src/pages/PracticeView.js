@@ -391,7 +391,7 @@ function PracticeView() {
                         top: 0,
                         bottom: 0,
                         width: `${(stats.correct / total) * 100}%`,
-                        background: 'var(--success)',
+                        background: '#00ff00',
                         transition: 'width 0.3s ease'
                       }} />
                     </div>
@@ -523,8 +523,8 @@ function PracticeView() {
               style={{
                 padding: '12px 24px',
                 fontSize: '16px',
-                background: 'var(--success)',
-                borderColor: 'var(--success)'
+                background: '#00ff00',
+                borderColor: '#00ff00'
               }}
             >
               Mark Correct

@@ -612,7 +612,7 @@ function SubjectView() {
                           left: 0,
                           top: 0,
                           bottom: 0,
-                          width: '60%', // Mock percentage
+                          width: '60%',
                           background: '#00ff00',
                           transition: 'width 0.3s ease-in-out',
                         }} />

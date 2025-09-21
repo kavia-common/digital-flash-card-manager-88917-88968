@@ -26,7 +26,7 @@ function FlashcardStats({ correct = 0, incorrect = 0 }) {
         top: 0,
         bottom: 0,
         width: `${correctPercentage}%`,
-        background: 'var(--success)',
+        background: '#00ff00',
         transition: 'width 0.3s ease-in-out',
       }} />
       <div style={{
