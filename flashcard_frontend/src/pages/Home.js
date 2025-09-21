@@ -14,7 +14,7 @@ Modal.setAppElement('#root');
  * Home page component showing user's subjects and navigation
  */
 function Home() {
-  const { user, logout } = useAuth();
+  const { user, logout, userType } = useAuth();
   const navigate = useNavigate();
   const [subjects, setSubjects] = useState([]);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -64,12 +64,27 @@ function Home() {
     }
   };
 
+  // Maximum subjects allowed for free users
+  const MAX_FREE_SUBJECTS = 3;
+
+  // Check if user can create more subjects
+  const canCreateSubject = () => {
+    if (userType === 'premium') return true;
+    return subjects.length < MAX_FREE_SUBJECTS;
+  };
+
   const handleCreateSubject = async (e) => {
     e.preventDefault();
     setError('');
     
     if (!newSubjectName.trim()) {
       setError('Please enter a subject name');
+      return;
+    }
+
+    // Check subject limit for free users
+    if (!canCreateSubject()) {
+      setError('Free users can only create up to 3 subjects. Please upgrade to create more.');
       return;
     }
 
@@ -158,6 +173,57 @@ function Home() {
       {/* Main Content */}
       <main className="section">
         <div className="container">
+          {/* Progress Bar for Free Users */}
+          {userType === 'free' && (
+            <div style={{
+              background: 'color-mix(in srgb, var(--primary) 10%, transparent)',
+              padding: '16px',
+              borderRadius: 'var(--radius)',
+              marginBottom: '24px'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '8px'
+              }}>
+                <span style={{
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: 'var(--primary)'
+                }}>
+                  {subjects.length}/{MAX_FREE_SUBJECTS} Subjects Used
+                </span>
+                <button
+                  className="btn-ghost"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '14px',
+                    color: 'var(--primary)',
+                    borderColor: 'var(--primary)'
+                  }}
+                  onClick={() => navigate('/upgrade')}
+                >
+                  Upgrade to Premium
+                </button>
+              </div>
+              <div style={{
+                width: '100%',
+                height: '6px',
+                background: 'color-mix(in srgb, var(--primary) 20%, transparent)',
+                borderRadius: '3px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  width: `${(subjects.length / MAX_FREE_SUBJECTS) * 100}%`,
+                  height: '100%',
+                  background: 'var(--primary)',
+                  transition: 'width 0.3s ease'
+                }} />
+              </div>
+            </div>
+          )}
+
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
