@@ -21,6 +21,7 @@ function PracticeView() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [answerStats, setAnswerStats] = useState({});
+  const [answerFeedback, setAnswerFeedback] = useState(null);
 
   useEffect(() => {
     if (!user) {
@@ -77,6 +78,9 @@ function PracticeView() {
   const handleAnswer = (isCorrect) => {
     const currentCard = flashcards[currentCardIndex];
     
+    // Show feedback animation
+    setAnswerFeedback(isCorrect);
+    
     // Update stats
     setAnswerStats(prev => ({
       ...prev,
@@ -86,19 +90,17 @@ function PracticeView() {
       }
     }));
 
-    // Move to next card
-    if (currentCardIndex < flashcards.length - 1) {
-      setCurrentCardIndex(currentCardIndex + 1);
-    } else {
-      // Optional: Loop back to start
-      setCurrentCardIndex(0);
-    }
-    setIsFlipped(false);
-  };
-
-  const selectCard = (index) => {
-    setCurrentCardIndex(index);
-    setIsFlipped(false);
+    // Wait for feedback animation before advancing
+    setTimeout(() => {
+      if (currentCardIndex < flashcards.length - 1) {
+        setCurrentCardIndex(currentCardIndex + 1);
+      } else {
+        // Optional: Loop back to start
+        setCurrentCardIndex(0);
+      }
+      setIsFlipped(false);
+      setAnswerFeedback(null);
+    }, 700);
   };
 
   if (isLoading) {
@@ -327,7 +329,7 @@ function PracticeView() {
             </span>
           </div>
 
-          {/* Flashcards List */}
+          {/* Flashcards List - Now non-interactive */}
           <div style={{
             display: 'flex',
             flexDirection: 'column',
@@ -338,27 +340,23 @@ function PracticeView() {
               const total = stats ? stats.correct + stats.incorrect : 0;
               
               return (
-                <button
+                <div
                   key={card.id}
-                  onClick={() => selectCard(index)}
-                  className="btn-ghost"
                   style={{
                     position: 'relative',
-                    justifyContent: 'flex-start',
                     padding: '12px',
                     fontWeight: '600',
                     color: currentCardIndex === index ? 'var(--primary)' : 'var(--text)',
                     background: currentCardIndex === index 
                       ? 'color-mix(in srgb, var(--primary) 8%, transparent)'
-                      : undefined,
-                    border: currentCardIndex === index
-                      ? '1px solid color-mix(in srgb, var(--primary) 20%, transparent)'
-                      : undefined,
+                      : 'var(--surface)',
+                    border: '1px solid ' + (currentCardIndex === index
+                      ? 'color-mix(in srgb, var(--primary) 20%, transparent)'
+                      : 'var(--border-color)'),
+                    borderRadius: 'var(--radius-sm)',
                     whiteSpace: 'normal',
                     textAlign: 'left',
-                    height: 'auto',
-                    minHeight: '48px',
-                    overflow: 'hidden'
+                    minHeight: '48px'
                   }}
                 >
                   <div style={{
@@ -398,7 +396,7 @@ function PracticeView() {
                       }} />
                     </div>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>
@@ -426,8 +424,13 @@ function PracticeView() {
                 height: '100%',
                 transformStyle: 'preserve-3d',
                 transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0)',
-                transition: 'transform 0.6s',
-                cursor: 'pointer'
+                transition: 'transform 0.6s, background-color 0.3s ease',
+                cursor: 'pointer',
+                background: answerFeedback === true 
+                  ? 'color-mix(in srgb, var(--success) 10%, var(--surface))'
+                  : answerFeedback === false
+                    ? 'color-mix(in srgb, var(--error) 10%, var(--surface))'
+                    : 'var(--surface)',
               }}
               onClick={() => setIsFlipped(!isFlipped)}
             >
@@ -437,7 +440,7 @@ function PracticeView() {
                 width: '100%',
                 height: '100%',
                 backfaceVisibility: 'hidden',
-                background: 'var(--surface)',
+                background: 'inherit',
                 borderRadius: 'var(--radius)',
                 padding: '24px',
                 display: 'flex',
@@ -474,7 +477,7 @@ function PracticeView() {
                 width: '100%',
                 height: '100%',
                 backfaceVisibility: 'hidden',
-                background: 'var(--surface)',
+                background: 'inherit',
                 borderRadius: 'var(--radius)',
                 padding: '24px',
                 display: 'flex',
