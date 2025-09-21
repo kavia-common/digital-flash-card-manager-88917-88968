@@ -105,13 +105,26 @@ function PracticeView() {
           </div>
         </nav>
         <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
+          display: 'grid',
+          gridTemplateColumns: '280px 1fr',
           minHeight: 'calc(100vh - 60px)',
-          color: 'var(--muted)'
         }}>
-          Loading practice session...
+          <aside style={{
+            background: 'var(--surface)',
+            borderRight: '1px solid var(--border-color)',
+            padding: '24px'
+          }}>
+            <div style={{ color: 'var(--muted)' }}>Loading...</div>
+          </aside>
+          <main style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '24px',
+            color: 'var(--muted)'
+          }}>
+            Loading practice session...
+          </main>
         </div>
       </div>
     );
@@ -141,20 +154,33 @@ function PracticeView() {
           </div>
         </nav>
         <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '16px',
-          padding: '48px 20px',
-          textAlign: 'center'
+          display: 'grid',
+          gridTemplateColumns: '280px 1fr',
+          minHeight: 'calc(100vh - 60px)',
         }}>
-          <div style={{ fontSize: '24px' }}>😕</div>
-          <h2 style={{ margin: 0, color: 'var(--error)' }}>
-            {error}
-          </h2>
-          <Link to={`/subjects/${subjectId}`} className="btn-primary">
-            Return to Subject
-          </Link>
+          <aside style={{
+            background: 'var(--surface)',
+            borderRight: '1px solid var(--border-color)',
+            padding: '24px'
+          }}>
+            <div style={{ color: 'var(--error)' }}>Failed to load flashcards</div>
+          </aside>
+          <main style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px',
+            padding: '48px 20px',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '24px' }}>😕</div>
+            <h2 style={{ margin: 0, color: 'var(--error)' }}>
+              {error}
+            </h2>
+            <Link to={`/subjects/${subjectId}`} className="btn-primary">
+              Return to Subject
+            </Link>
+          </main>
         </div>
       </div>
     );
@@ -184,21 +210,34 @@ function PracticeView() {
           </div>
         </nav>
         <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '16px',
-          padding: '48px 20px',
-          textAlign: 'center'
+          display: 'grid',
+          gridTemplateColumns: '280px 1fr',
+          minHeight: 'calc(100vh - 60px)',
         }}>
-          <div style={{ fontSize: '24px' }}>📝</div>
-          <h2 style={{ margin: '0 0 8px' }}>No flashcards available</h2>
-          <p style={{ margin: '0 0 24px', color: 'var(--muted)' }}>
-            Create some flashcards to start practicing
-          </p>
-          <Link to={`/subjects/${subjectId}`} className="btn-primary">
-            Return to Subject
-          </Link>
+          <aside style={{
+            background: 'var(--surface)',
+            borderRight: '1px solid var(--border-color)',
+            padding: '24px'
+          }}>
+            <div style={{ color: 'var(--muted)' }}>No flashcards available</div>
+          </aside>
+          <main style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px',
+            padding: '48px 20px',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '24px' }}>📝</div>
+            <h2 style={{ margin: '0 0 8px' }}>No flashcards available</h2>
+            <p style={{ margin: '0 0 24px', color: 'var(--muted)' }}>
+              Create some flashcards to start practicing
+            </p>
+            <Link to={`/subjects/${subjectId}`} className="btn-primary">
+              Return to Subject
+            </Link>
+          </main>
         </div>
       </div>
     );
@@ -229,8 +268,94 @@ function PracticeView() {
         </div>
       </nav>
 
-      <main style={{ padding: '24px' }}>
-        <div className="container" style={{ maxWidth: '800px' }}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '280px 1fr',
+        minHeight: 'calc(100vh - 60px)',
+      }}>
+        {/* Sidebar */}
+        <aside style={{
+          background: 'var(--surface)',
+          borderRight: '1px solid var(--border-color)',
+          padding: '24px',
+          overflowY: 'auto'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '20px'
+          }}>
+            <h2 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              margin: 0
+            }}>
+              Flashcards
+            </h2>
+            <span className="pill" style={{
+              background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
+              color: 'var(--primary)',
+              fontSize: '12px',
+              fontWeight: '600'
+            }}>
+              {currentCardIndex + 1} / {flashcards.length}
+            </span>
+          </div>
+
+          {/* Flashcards List */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
+            {flashcards.map((card, index) => (
+              <button
+                key={card.id}
+                onClick={() => {
+                  setIsFlipped(false);
+                  setCurrentCardIndex(index);
+                }}
+                className="btn-ghost"
+                style={{
+                  justifyContent: 'flex-start',
+                  padding: '12px',
+                  fontWeight: '600',
+                  color: currentCardIndex === index ? 'var(--primary)' : 'var(--text)',
+                  background: currentCardIndex === index 
+                    ? 'color-mix(in srgb, var(--primary) 8%, transparent)'
+                    : undefined,
+                  border: currentCardIndex === index
+                    ? '1px solid color-mix(in srgb, var(--primary) 20%, transparent)'
+                    : undefined,
+                  whiteSpace: 'normal',
+                  textAlign: 'left',
+                  height: 'auto',
+                  minHeight: '48px'
+                }}
+              >
+                <div style={{
+                  display: 'flex',
+                  gap: '8px',
+                  alignItems: 'flex-start'
+                }}>
+                  <span style={{
+                    color: 'var(--muted)',
+                    fontSize: '14px',
+                    minWidth: '24px'
+                  }}>
+                    {index + 1}.
+                  </span>
+                  {card.frontText}
+                </div>
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <main style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
           {/* Card Display */}
           <div style={{
             position: 'relative',
@@ -331,8 +456,8 @@ function PracticeView() {
               Next →
             </button>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
