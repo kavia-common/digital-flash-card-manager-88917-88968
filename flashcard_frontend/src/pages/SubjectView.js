@@ -358,43 +358,34 @@ function SubjectView() {
                       </div>
                       
                       {/* Front Text */}
-                      {card.frontText && (
-                        <h3 className="feature-title" style={{
-                          margin: '0 0 8px',
-                          fontSize: '18px',
-                          fontWeight: '600',
-                        }}>
-                          {card.frontText}
-                        </h3>
-                      )}
-                      
-                      {/* Empty State */}
-                      {!card.frontText && (
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          color: 'var(--muted)',
-                          marginBottom: '8px',
-                        }}>
-                          <div className="feature-icon">📝</div>
-                          <span>Empty Card</span>
-                        </div>
-                      )}
-                      
-                      {/* Back Text Preview */}
-                      <p className="feature-desc" style={{
-                        margin: '0',
-                        color: 'var(--muted)',
-                        fontSize: '14px',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
+                      <div style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center'
                       }}>
-                        {card.backText || 'No content'}
-                      </p>
+                        {card.frontText ? (
+                          <h3 className="feature-title" style={{
+                            margin: 0,
+                            fontSize: '18px',
+                            fontWeight: '600',
+                            textAlign: 'center'
+                          }}>
+                            {card.frontText}
+                          </h3>
+                        ) : (
+                          <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '8px',
+                            color: 'var(--muted)',
+                          }}>
+                            <div className="feature-icon">📝</div>
+                            <span>Empty Card</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))
