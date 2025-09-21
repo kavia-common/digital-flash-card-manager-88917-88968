@@ -401,7 +401,7 @@ function SubjectView() {
                   <p style={{ margin: '0 0 24px' }}>
                     Create your first flashcard to start learning
                   </p>
-                  <button className="btn-primary">
+                  <button className="btn-primary" onClick={() => setIsFlashcardModalOpen(true)}>
                     Create Flashcard
                   </button>
                 </div>

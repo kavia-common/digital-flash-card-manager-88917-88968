@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
 import { useAuth } from '../context/AuthContext';
-import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 // Set up Modal for accessibility
@@ -21,6 +21,8 @@ function Home() {
   const [newSubjectName, setNewSubjectName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState(null);
 
   useEffect(() => {
     // Redirect if not logged in
@@ -91,6 +93,29 @@ function Home() {
     } catch (error) {
       console.error("Error creating subject:", error);
       setError('Failed to create subject. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteSubject = async () => {
+    if (!selectedSubject) return;
+    
+    setIsSubmitting(true);
+    try {
+      await deleteDoc(doc(db, `users/${user.uid}/subjects/${selectedSubject.id}`));
+      setSubjects(prev => prev.filter(subject => subject.id !== selectedSubject.id));
+      setIsDeleteModalOpen(false);
+      setSelectedSubject(null);
+      
+      // TODO: Implement recursive deletion of topics and flashcards
+      // This would require either:
+      // 1. Using a Cloud Function to handle cascading deletes
+      // 2. Implementing client-side deletion of all subcollections
+      
+    } catch (error) {
+      console.error("Error deleting subject:", error);
+      setError('Failed to delete subject. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -391,15 +416,15 @@ function Home() {
           >
             {subjects.length > 0 ? (
               subjects.map(subject => (
-                <Link
+                <div
                   key={subject.id}
-                  to={`/subjects/${subject.id}`}
                   className="feature"
                   style={{
-                    textDecoration: 'none',
                     color: 'var(--text)',
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    cursor: 'pointer'
                   }}
+                  onClick={() => navigate(`/subjects/${subject.id}`)}
                 >
                   <div style={{
                     display: 'flex',
@@ -407,18 +432,36 @@ function Home() {
                     alignItems: 'flex-start',
                     marginBottom: '12px'
                   }}>
-                    <div className="feature-icon">
-                      📚
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <div className="feature-icon">
+                        📚
+                      </div>
+                      <div className="pill">
+                        {subject.cardCount || 0} cards
+                      </div>
                     </div>
-                    <div className="pill">
-                      {subject.cardCount || 0} cards
-                    </div>
+                    <button
+                      className="btn-ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedSubject(subject);
+                        setIsDeleteModalOpen(true);
+                      }}
+                      style={{
+                        padding: '8px',
+                        minWidth: 'unset',
+                        color: 'var(--error)'
+                      }}
+                      aria-label={`Delete ${subject.title}`}
+                    >
+                      🗑️
+                    </button>
                   </div>
                   <h3 className="feature-title">{subject.title}</h3>
                   <p className="feature-desc">
                     {subject.description || 'No description'}
                   </p>
-                </Link>
+                </div>
               ))
             ) : (
               <div 
@@ -454,6 +497,74 @@ function Home() {
               </div>
             )}
           </div>
+
+          {/* Delete Confirmation Modal */}
+          <Modal
+            isOpen={isDeleteModalOpen}
+            onRequestClose={() => {
+              setIsDeleteModalOpen(false);
+              setSelectedSubject(null);
+              setError('');
+            }}
+            style={modalStyles}
+            contentLabel="Delete Subject Confirmation"
+          >
+            <h2 style={{ 
+              margin: '0 0 16px',
+              fontSize: '24px',
+              fontWeight: '700'
+            }}>
+              Delete Subject
+            </h2>
+            <p style={{
+              marginBottom: '24px',
+              color: 'var(--muted)'
+            }}>
+              Are you sure you want to delete "{selectedSubject?.title}"? This action cannot be undone.
+            </p>
+            
+            {error && (
+              <div style={{ 
+                padding: '12px',
+                marginBottom: '16px',
+                borderRadius: '12px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                color: 'var(--error)',
+              }}>
+                {error}
+              </div>
+            )}
+            
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setSelectedSubject(null);
+                  setError('');
+                }}
+                className="btn-ghost"
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteSubject}
+                className="btn-ghost"
+                style={{
+                  color: 'var(--error)',
+                  borderColor: 'var(--error)'
+                }}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Deleting...' : 'Delete Subject'}
+              </button>
+            </div>
+          </Modal>
         </div>
       </main>
     </div>
