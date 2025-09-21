@@ -20,6 +20,7 @@ function PracticeView() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [answerStats, setAnswerStats] = useState({});
 
   useEffect(() => {
     if (!user) {
@@ -54,6 +55,14 @@ function PracticeView() {
         // Shuffle the cards
         const shuffledCards = [...cards].sort(() => Math.random() - 0.5);
         setFlashcards(shuffledCards);
+
+        // Initialize answer stats
+        const initialStats = {};
+        shuffledCards.forEach(card => {
+          initialStats[card.id] = { correct: 0, incorrect: 0 };
+        });
+        setAnswerStats(initialStats);
+
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -65,20 +74,31 @@ function PracticeView() {
     fetchData();
   }, [user, subjectId, topicId, navigate]);
 
-  const handleNextCard = () => {
+  const handleAnswer = (isCorrect) => {
+    const currentCard = flashcards[currentCardIndex];
+    
+    // Update stats
+    setAnswerStats(prev => ({
+      ...prev,
+      [currentCard.id]: {
+        correct: prev[currentCard.id].correct + (isCorrect ? 1 : 0),
+        incorrect: prev[currentCard.id].incorrect + (isCorrect ? 0 : 1)
+      }
+    }));
+
+    // Move to next card
+    if (currentCardIndex < flashcards.length - 1) {
+      setCurrentCardIndex(currentCardIndex + 1);
+    } else {
+      // Optional: Loop back to start
+      setCurrentCardIndex(0);
+    }
     setIsFlipped(false);
-    setTimeout(() => {
-      setCurrentCardIndex((prev) => (prev + 1) % flashcards.length);
-    }, 300);
   };
 
-  const handlePreviousCard = () => {
+  const selectCard = (index) => {
+    setCurrentCardIndex(index);
     setIsFlipped(false);
-    setTimeout(() => {
-      setCurrentCardIndex((prev) => 
-        prev === 0 ? flashcards.length - 1 : prev - 1
-      );
-    }, 300);
   };
 
   if (isLoading) {
@@ -244,6 +264,9 @@ function PracticeView() {
   }
 
   const currentCard = flashcards[currentCardIndex];
+  const currentStats = answerStats[currentCard.id] || { correct: 0, incorrect: 0 };
+  const totalAttempts = currentStats.correct + currentStats.incorrect;
+  const successRate = totalAttempts > 0 ? (currentStats.correct / totalAttempts) * 100 : 0;
 
   return (
     <div className="App">
@@ -310,52 +333,84 @@ function PracticeView() {
             flexDirection: 'column',
             gap: '8px'
           }}>
-            {flashcards.map((card, index) => (
-              <button
-                key={card.id}
-                onClick={() => {
-                  setIsFlipped(false);
-                  setCurrentCardIndex(index);
-                }}
-                className="btn-ghost"
-                style={{
-                  justifyContent: 'flex-start',
-                  padding: '12px',
-                  fontWeight: '600',
-                  color: currentCardIndex === index ? 'var(--primary)' : 'var(--text)',
-                  background: currentCardIndex === index 
-                    ? 'color-mix(in srgb, var(--primary) 8%, transparent)'
-                    : undefined,
-                  border: currentCardIndex === index
-                    ? '1px solid color-mix(in srgb, var(--primary) 20%, transparent)'
-                    : undefined,
-                  whiteSpace: 'normal',
-                  textAlign: 'left',
-                  height: 'auto',
-                  minHeight: '48px'
-                }}
-              >
-                <div style={{
-                  display: 'flex',
-                  gap: '8px',
-                  alignItems: 'flex-start'
-                }}>
-                  <span style={{
-                    color: 'var(--muted)',
-                    fontSize: '14px',
-                    minWidth: '24px'
+            {flashcards.map((card, index) => {
+              const stats = answerStats[card.id];
+              const total = stats ? stats.correct + stats.incorrect : 0;
+              
+              return (
+                <button
+                  key={card.id}
+                  onClick={() => selectCard(index)}
+                  className="btn-ghost"
+                  style={{
+                    position: 'relative',
+                    justifyContent: 'flex-start',
+                    padding: '12px',
+                    fontWeight: '600',
+                    color: currentCardIndex === index ? 'var(--primary)' : 'var(--text)',
+                    background: currentCardIndex === index 
+                      ? 'color-mix(in srgb, var(--primary) 8%, transparent)'
+                      : undefined,
+                    border: currentCardIndex === index
+                      ? '1px solid color-mix(in srgb, var(--primary) 20%, transparent)'
+                      : undefined,
+                    whiteSpace: 'normal',
+                    textAlign: 'left',
+                    height: 'auto',
+                    minHeight: '48px',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    gap: '8px',
+                    alignItems: 'flex-start',
+                    position: 'relative',
+                    zIndex: 1
                   }}>
-                    {index + 1}.
-                  </span>
-                  {card.frontText}
-                </div>
-              </button>
-            ))}
+                    <span style={{
+                      color: 'var(--muted)',
+                      fontSize: '14px',
+                      minWidth: '24px'
+                    }}>
+                      {index + 1}.
+                    </span>
+                    {card.frontText}
+                  </div>
+                  {total > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: '3px',
+                      background: '#eee',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: `${(stats.correct / total) * 100}%`,
+                        background: 'var(--success)',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </aside>
 
         {/* Main Content Area */}
-        <main style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
+        <main style={{ 
+          padding: '24px',
+          maxWidth: '800px',
+          margin: '0 auto',
+          width: '100%'
+        }}>
           {/* Card Display */}
           <div style={{
             position: 'relative',
@@ -399,6 +454,18 @@ function PracticeView() {
                 }}>
                   {currentCard.frontText}
                 </h2>
+                {totalAttempts > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '16px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    fontSize: '14px',
+                    color: 'var(--muted)'
+                  }}>
+                    Success rate: {successRate.toFixed(0)}% ({currentStats.correct}/{totalAttempts})
+                  </div>
+                )}
               </div>
 
               {/* Back Side */}
@@ -429,31 +496,35 @@ function PracticeView() {
             </div>
           </div>
 
-          {/* Navigation Controls */}
+          {/* Answer Controls */}
           <div style={{
             display: 'flex',
             justifyContent: 'center',
             gap: '16px'
           }}>
             <button
-              onClick={handlePreviousCard}
+              onClick={() => handleAnswer(false)}
               className="btn-ghost"
               style={{
                 padding: '12px 24px',
-                fontSize: '16px'
+                fontSize: '16px',
+                color: 'var(--error)',
+                borderColor: 'var(--error)'
               }}
             >
-              ← Previous
+              Mark Incorrect
             </button>
             <button
-              onClick={handleNextCard}
+              onClick={() => handleAnswer(true)}
               className="btn-primary"
               style={{
                 padding: '12px 24px',
-                fontSize: '16px'
+                fontSize: '16px',
+                background: 'var(--success)',
+                borderColor: 'var(--success)'
               }}
             >
-              Next →
+              Mark Correct
             </button>
           </div>
         </main>
