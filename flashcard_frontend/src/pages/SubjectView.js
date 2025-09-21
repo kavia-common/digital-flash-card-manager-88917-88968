@@ -359,6 +359,55 @@ function SubjectView() {
           borderRight: '1px solid var(--border-color)',
           padding: '24px',
         }}>
+          {userType === 'free' && (
+            <div style={{
+              background: 'color-mix(in srgb, var(--primary) 10%, transparent)',
+              padding: '16px',
+              borderRadius: 'var(--radius)',
+              marginBottom: '16px'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '8px'
+              }}>
+                <span style={{
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: 'var(--primary)'
+                }}>
+                  {topics.length}/{MAX_FREE_TOPICS} Topics Used
+                </span>
+                <button
+                  className="btn-ghost"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '14px',
+                    color: 'var(--primary)',
+                    borderColor: 'var(--primary)'
+                  }}
+                  onClick={() => setShowUpgradeModal(true)}
+                >
+                  Upgrade to Premium
+                </button>
+              </div>
+              <div style={{
+                width: '100%',
+                height: '6px',
+                background: 'color-mix(in srgb, var(--primary) 20%, transparent)',
+                borderRadius: '3px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  width: `${(topics.length / MAX_FREE_TOPICS) * 100}%`,
+                  height: '100%',
+                  background: 'var(--primary)',
+                  transition: 'width 0.3s ease'
+                }} />
+              </div>
+            </div>
+          )}
 
           <div style={{
             display: 'flex',
@@ -469,56 +518,6 @@ function SubjectView() {
               <h1 className="section-title">
                 {selectedTopic ? selectedTopic.title : 'All Flashcards'}
               </h1>
-              {userType === 'free' && (
-                <div style={{
-                  background: 'color-mix(in srgb, var(--primary) 10%, transparent)',
-                  padding: '16px',
-                  borderRadius: 'var(--radius)',
-                  marginTop: '12px',
-                  marginBottom: '24px'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '8px'
-                  }}>
-                    <span style={{
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: 'var(--primary)'
-                    }}>
-                      {topics.length}/{MAX_FREE_TOPICS} Topics Used
-                    </span>
-                    <button
-                      className="btn-ghost"
-                      style={{
-                        padding: '6px 12px',
-                        fontSize: '14px',
-                        color: 'var(--primary)',
-                        borderColor: 'var(--primary)'
-                      }}
-                      onClick={() => setShowUpgradeModal(true)}
-                    >
-                      Upgrade to Premium
-                    </button>
-                  </div>
-                  <div style={{
-                    width: '100%',
-                    height: '6px',
-                    background: 'color-mix(in srgb, var(--primary) 20%, transparent)',
-                    borderRadius: '3px',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      width: `${(topics.length / MAX_FREE_TOPICS) * 100}%`,
-                      height: '100%',
-                      background: 'var(--primary)',
-                      transition: 'width 0.3s ease'
-                    }} />
-                  </div>
-                </div>
-              )}
               {topics.length === 0 && (
                 <button 
                   className="btn-primary"
