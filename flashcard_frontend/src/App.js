@@ -175,7 +175,6 @@ function App() {
       <Route path="/login" element={user ? <Navigate to="/home" /> : <Login />} />
       <Route path="/home" element={<Home />} />
       <Route path="/subjects/:subjectId/practice/:topicId" element={<PracticeView />} />
-      <Route path="/subjects/new" element={<Navigate to="/home" />} /> {/* Placeholder */}
       <Route path="/subjects/:subjectId" element={<SubjectView />} />
     </Routes>
   );
