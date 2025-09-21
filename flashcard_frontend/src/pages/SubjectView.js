@@ -325,12 +325,23 @@ function SubjectView() {
               <h1 className="section-title">
                 {selectedTopic ? selectedTopic.title : 'All Flashcards'}
               </h1>
-              <button 
-                className="btn-primary"
-                onClick={() => setIsFlashcardModalOpen(true)}
-              >
-                + Create Flashcard
-              </button>
+              {topics.length === 0 ? (
+                <button 
+                  className="btn-primary"
+                  onClick={() => setIsTopicModalOpen(true)}
+                >
+                  + Create Topic
+                </button>
+              ) : (
+                selectedTopic && (
+                  <button 
+                    className="btn-primary"
+                    onClick={() => setIsFlashcardModalOpen(true)}
+                  >
+                    + Create Flashcard
+                  </button>
+                )
+              )}
             </div>
 
             {/* Flashcards Grid */}
