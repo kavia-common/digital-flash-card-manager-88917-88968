@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Modal from 'react-modal';
 import { useAuth } from '../context/AuthContext';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   collection, 
   getDocs, 
@@ -38,8 +37,6 @@ function SubjectView() {
   const [isFlashcardModalOpen, setIsFlashcardModalOpen] = useState(false);
   const [frontText, setFrontText] = useState('');
   const [backText, setBackText] = useState('');
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -105,11 +102,11 @@ function SubjectView() {
     setError('');
 
     // Validation
-    if (!frontText && !selectedImage) {
-      setError('Please provide either text or an image for the front side');
+    if (!frontText.trim()) {
+      setError('Please provide text for the front side');
       return;
     }
-    if (!backText) {
+    if (!backText.trim()) {
       setError('Please provide text for the back side');
       return;
     }
@@ -117,21 +114,10 @@ function SubjectView() {
     setIsSubmitting(true);
 
     try {
-      let frontImageUrl = '';
-      
-      // Upload image if selected
-      if (selectedImage) {
-        const storage = getStorage();
-        const imageRef = ref(storage, `flashcards/${user.uid}/${subjectId}/${Date.now()}_${selectedImage.name}`);
-        await uploadBytes(imageRef, selectedImage);
-        frontImageUrl = await getDownloadURL(imageRef);
-      }
-
       // Create new flashcard
       const flashcardsRef = collection(db, `users/${user.uid}/subjects/${subjectId}/flashcards`);
       const newFlashcard = {
         frontText: frontText.trim(),
-        frontImageUrl,
         backText: backText.trim(),
         topicId: selectedTopic?.id || null,
         createdAt: new Date().toISOString()
@@ -143,26 +129,12 @@ function SubjectView() {
       // Reset form
       setFrontText('');
       setBackText('');
-      setSelectedImage(null);
-      setImagePreview('');
       setIsFlashcardModalOpen(false);
     } catch (error) {
       console.error("Error creating flashcard:", error);
       setError('Failed to create flashcard. Please try again.');
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -358,25 +330,9 @@ function SubjectView() {
                       display: 'flex',
                       flexDirection: 'column',
                       position: 'relative',
-                      overflow: 'hidden',
                       minHeight: '200px',
-                      background: card.frontImageUrl ? 'transparent' : 'var(--surface)',
                     }}
                   >
-                    {/* Background Image */}
-                    {card.frontImageUrl && (
-                      <div style={{
-                        position: 'absolute',
-                        inset: 0,
-                        backgroundImage: `url(${card.frontImageUrl})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        zIndex: 0,
-                        opacity: 0.85,
-                      }} />
-                    )}
-                    
-                    {/* Content Overlay */}
                     <div style={{
                       position: 'relative',
                       zIndex: 1,
@@ -384,9 +340,6 @@ function SubjectView() {
                       padding: '16px',
                       display: 'flex',
                       flexDirection: 'column',
-                      background: card.frontImageUrl 
-                        ? 'linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.7) 100%)'
-                        : 'transparent',
                     }}>
                       <div style={{
                         display: 'flex',
@@ -398,8 +351,6 @@ function SubjectView() {
                           style={{
                             padding: '6px',
                             minWidth: 'unset',
-                            color: card.frontImageUrl ? '#fff' : 'var(--text)',
-                            background: card.frontImageUrl ? 'rgba(0,0,0,0.3)' : 'transparent',
                           }}
                         >
                           ✏️
@@ -410,17 +361,15 @@ function SubjectView() {
                       {card.frontText && (
                         <h3 className="feature-title" style={{
                           margin: '0 0 8px',
-                          color: card.frontImageUrl ? '#fff' : 'var(--text)',
                           fontSize: '18px',
                           fontWeight: '600',
-                          textShadow: card.frontImageUrl ? '0 2px 4px rgba(0,0,0,0.3)' : 'none',
                         }}>
                           {card.frontText}
                         </h3>
                       )}
                       
                       {/* Empty State */}
-                      {!card.frontText && !card.frontImageUrl && (
+                      {!card.frontText && (
                         <div style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -436,7 +385,7 @@ function SubjectView() {
                       {/* Back Text Preview */}
                       <p className="feature-desc" style={{
                         margin: '0',
-                        color: card.frontImageUrl ? 'rgba(255,255,255,0.8)' : 'var(--muted)',
+                        color: 'var(--muted)',
                         fontSize: '14px',
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
@@ -497,8 +446,6 @@ function SubjectView() {
           setIsFlashcardModalOpen(false);
           setFrontText('');
           setBackText('');
-          setSelectedImage(null);
-          setImagePreview('');
           setError('');
         }}
         style={modalStyles}
@@ -521,89 +468,23 @@ function SubjectView() {
                 fontWeight: '600'
               }}
             >
-              Front Side (Text and/or Image)
+              Front Side
             </label>
             <input
               type="text"
               value={frontText}
               onChange={(e) => setFrontText(e.target.value)}
-              placeholder="Enter front side text (optional)"
+              placeholder="Enter front side text"
               style={{
                 width: '100%',
                 padding: '10px 14px',
-                marginBottom: '12px',
                 borderRadius: '12px',
                 border: '1px solid var(--muted)',
                 background: 'var(--surface)',
                 color: 'var(--text)',
               }}
+              required
             />
-            
-            <div style={{
-              marginTop: '12px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px'
-            }}>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                style={{ display: 'none' }}
-                id="image-upload"
-              />
-              <label 
-                htmlFor="image-upload"
-                className="btn-ghost"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  cursor: 'pointer'
-                }}
-              >
-                📷 Upload Image (optional)
-              </label>
-              
-              {imagePreview && (
-                <div style={{
-                  position: 'relative',
-                  width: '100%',
-                  maxWidth: '200px',
-                  marginTop: '8px'
-                }}>
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    style={{
-                      width: '100%',
-                      height: 'auto',
-                      borderRadius: '12px',
-                      border: '1px solid var(--muted)'
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedImage(null);
-                      setImagePreview('');
-                    }}
-                    className="btn-ghost"
-                    style={{
-                      position: 'absolute',
-                      top: '8px',
-                      right: '8px',
-                      padding: '4px 8px',
-                      minWidth: 'unset',
-                      background: 'var(--surface)',
-                      borderRadius: '8px'
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Back Side */}
@@ -615,7 +496,7 @@ function SubjectView() {
                 fontWeight: '600'
               }}
             >
-              Back Side (Required)
+              Back Side
             </label>
             <textarea
               value={backText}
@@ -658,8 +539,6 @@ function SubjectView() {
                 setIsFlashcardModalOpen(false);
                 setFrontText('');
                 setBackText('');
-                setSelectedImage(null);
-                setImagePreview('');
                 setError('');
               }}
               className="btn-ghost"
