@@ -4,6 +4,7 @@ import Modal from 'react-modal';
 import { useAuth } from '../context/AuthContext';
 import FlashcardStats from '../components/flashcard/FlashcardStats';
 import Navbar from '../components/layout/Navbar';
+import UpgradeModal from '../modals/UpgradeModal';
 import { 
   collection, 
   getDocs, 
@@ -25,14 +26,19 @@ Modal.setAppElement('#root');
  * Subject view component showing topics in sidebar and flashcards in main area
  */
 function SubjectView() {
-  const { user } = useAuth();
+  const { user, userType } = useAuth();
   const navigate = useNavigate();
   const { subjectId } = useParams();
+  
+  // Maximum topics allowed for free users
+  const MAX_FREE_TOPICS = 3;
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
   const [subject, setSubject] = useState(null);
   const [topics, setTopics] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
+  
   // Topic modal state
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
   const [newTopicName, setNewTopicName] = useState('');
@@ -183,7 +189,6 @@ function SubjectView() {
     e.preventDefault();
     setError('');
 
-    // Validation
     if (!frontText.trim()) {
       setError('Please provide text for the front side');
       return;
@@ -227,7 +232,6 @@ function SubjectView() {
         setFlashcards(prev => [...prev, { id: docRef.id, ...newFlashcard }]);
       }
 
-      // Reset form
       setFrontText('');
       setBackText('');
       setIsFlashcardModalOpen(false);
@@ -240,12 +244,26 @@ function SubjectView() {
     }
   };
 
+  // Check if user can create more topics
+  const canCreateTopic = () => {
+    if (userType === 'premium') return true;
+    return topics.length < MAX_FREE_TOPICS;
+  };
+
   const handleCreateTopic = async (e) => {
     e.preventDefault();
     setError('');
     
     if (!newTopicName.trim()) {
       setError('Please enter a topic name');
+      return;
+    }
+
+    // Check topic limit for free users
+    if (!canCreateTopic()) {
+      setError('Free users can only create up to 3 topics. Please upgrade to create more.');
+      setIsTopicModalOpen(false);
+      setShowUpgradeModal(true);
       return;
     }
 
@@ -341,6 +359,56 @@ function SubjectView() {
           borderRight: '1px solid var(--border-color)',
           padding: '24px',
         }}>
+          {userType === 'free' && (
+            <div style={{
+              background: 'color-mix(in srgb, var(--primary) 10%, transparent)',
+              padding: '16px',
+              borderRadius: 'var(--radius)',
+              marginBottom: '16px'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '8px'
+              }}>
+                <span style={{
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: 'var(--primary)'
+                }}>
+                  {topics.length}/{MAX_FREE_TOPICS} Topics Used
+                </span>
+                <button
+                  className="btn-ghost"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '14px',
+                    color: 'var(--primary)',
+                    borderColor: 'var(--primary)'
+                  }}
+                  onClick={() => setShowUpgradeModal(true)}
+                >
+                  Upgrade to Premium
+                </button>
+              </div>
+              <div style={{
+                width: '100%',
+                height: '6px',
+                background: 'color-mix(in srgb, var(--primary) 20%, transparent)',
+                borderRadius: '3px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  width: `${(topics.length / MAX_FREE_TOPICS) * 100}%`,
+                  height: '100%',
+                  background: 'var(--primary)',
+                  transition: 'width 0.3s ease'
+                }} />
+              </div>
+            </div>
+          )}
+
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -508,19 +576,19 @@ function SubjectView() {
                         alignItems: 'center',
                         marginBottom: '8px'
                       }}>
-                        {/* Topic Chip */}
-                        {card.topicId && (
-                          <div className="pill" style={{
-                            background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
-                            border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
-                            color: 'var(--primary)',
-                            fontSize: '12px',
-                            fontWeight: '600'
-                          }}>
-                            {topics.find(t => t.id === card.topicId)?.title || 'Unknown Topic'}
-                          </div>
-                        )}
-=======
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {card.topicId && (
+                            <div className="pill" style={{
+                              background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
+                              border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
+                              color: 'var(--primary)',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}>
+                              {topics.find(t => t.id === card.topicId)?.title || 'Unknown Topic'}
+                            </div>
+                          )}
+                        </div>
                         <button 
                           className="btn-ghost"
                           style={{
@@ -615,6 +683,94 @@ function SubjectView() {
           </div>
         </main>
       </div>
+
+      {/* Create Topic Modal */}
+      <Modal
+        isOpen={isTopicModalOpen}
+        onRequestClose={() => {
+          setIsTopicModalOpen(false);
+          setNewTopicName('');
+          setError('');
+        }}
+        style={modalStyles}
+        contentLabel="Create New Topic"
+      >
+        <h2 style={{ 
+          margin: '0 0 16px',
+          fontSize: '24px',
+          fontWeight: '700'
+        }}>
+          Create New Topic
+        </h2>
+        <form onSubmit={handleCreateTopic}>
+          <div style={{ marginBottom: '16px' }}>
+            <label 
+              htmlFor="topicName" 
+              style={{ 
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: '600'
+              }}
+            >
+              Topic Name
+            </label>
+            <input
+              id="topicName"
+              type="text"
+              value={newTopicName}
+              onChange={(e) => setNewTopicName(e.target.value)}
+              placeholder="Enter topic name"
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: '12px',
+                border: '1px solid var(--muted)',
+                background: 'var(--surface)',
+                color: 'var(--text)',
+              }}
+              required
+            />
+          </div>
+          
+          {error && (
+            <div style={{ 
+              padding: '12px',
+              marginBottom: '16px',
+              borderRadius: '12px',
+              background: 'rgba(239, 68, 68, 0.1)',
+              color: 'var(--error)',
+            }}>
+              {error}
+            </div>
+          )}
+          
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            justifyContent: 'flex-end'
+          }}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsTopicModalOpen(false);
+                setNewTopicName('');
+                setError('');
+              }}
+              className="btn-ghost"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Creating...' : 'Create Topic'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Create Flashcard Modal */}
       <Modal
@@ -734,348 +890,12 @@ function SubjectView() {
         </form>
       </Modal>
 
-      {/* Create Topic Modal */}
-      <Modal
-        isOpen={isTopicModalOpen}
-        onRequestClose={() => {
-          setIsTopicModalOpen(false);
-          setNewTopicName('');
-          setError('');
-        }}
-        style={modalStyles}
-        contentLabel="Create New Topic"
-      >
-        <h2 style={{ 
-          margin: '0 0 16px',
-          fontSize: '24px',
-          fontWeight: '700'
-        }}>
-          Create New Topic
-        </h2>
-        <form onSubmit={handleCreateTopic}>
-          <div style={{ marginBottom: '16px' }}>
-            <label 
-              htmlFor="topicName" 
-              style={{ 
-                display: 'block',
-                marginBottom: '8px',
-                fontWeight: '600'
-              }}
-            >
-              Topic Name
-            </label>
-            <input
-              id="topicName"
-              type="text"
-              value={newTopicName}
-              onChange={(e) => setNewTopicName(e.target.value)}
-              placeholder="Enter topic name"
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: '12px',
-                border: '1px solid var(--muted)',
-                background: 'var(--surface)',
-                color: 'var(--text)',
-              }}
-              required
-            />
-          </div>
-          
-          {error && (
-            <div style={{ 
-              padding: '12px',
-              marginBottom: '16px',
-              borderRadius: '12px',
-              background: 'rgba(239, 68, 68, 0.1)',
-              color: 'var(--error)',
-            }}>
-              {error}
-            </div>
-          )}
-          
-          <div style={{
-            display: 'flex',
-            gap: '12px',
-            justifyContent: 'flex-end'
-          }}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsTopicModalOpen(false);
-                setNewTopicName('');
-                setError('');
-              }}
-              className="btn-ghost"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Creating...' : 'Create Topic'}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Focused Flashcard Modal */}
-      <Modal
-        isOpen={isFocusModalOpen}
-        onRequestClose={() => {
-          setIsFocusModalOpen(false);
-          setFocusedCard(null);
-          setIsFlipped(false);
-          setIsEditMode(false);
-          setError('');
-        }}
-        style={{
-          content: {
-            ...modalStyles.focusedCard.content,
-            display: 'flex',
-            flexDirection: 'column',
-            padding: '24px',
-            gap: '24px'
-          },
-          overlay: modalStyles.focusedCard.overlay
-        }}
-        contentLabel="View Flashcard"
-      >
-        {focusedCard && (
-          <div style={{
-            position: 'relative',
-            width: '100%',
-            height: '100%',
-            perspective: '1000px',
-          }}>
-            {/* Card Container */}
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: '400px',
-                  transformStyle: 'preserve-3d',
-                  transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0)',
-                  transition: 'transform 0.6s',
-                  background: 'var(--surface)',
-                  borderRadius: 'var(--radius)',
-                  boxShadow: 'var(--shadow-lg)',
-                  border: '1px solid var(--border-color)',
-                }}
-                onClick={() => !isEditMode && setIsFlipped(!isFlipped)}
-              >
-              {/* Front Side */}
-              <div style={{
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-                backfaceVisibility: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-              }}>
-                <div style={{
-                  padding: '24px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  height: '100%',
-                }}>
-                  {isEditMode ? (
-                    <input
-                      type="text"
-                      value={editedFrontText}
-                      onChange={(e) => setEditedFrontText(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        fontSize: '24px',
-                        textAlign: 'center',
-                        border: '1px solid var(--muted)',
-                        borderRadius: 'var(--radius)',
-                        background: 'var(--surface)',
-                        color: 'var(--text)',
-                      }}
-                    />
-                  ) : (
-                    <h2 style={{
-                      margin: 0,
-                      fontSize: '24px',
-                      fontWeight: '600',
-                      textAlign: 'center',
-                    }}>
-                      {focusedCard.frontText}
-                    </h2>
-                  )}
-                </div>
-              </div>
-
-              {/* Back Side */}
-              <div style={{
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-                backfaceVisibility: 'hidden',
-                transform: 'rotateY(180deg)',
-                display: 'flex',
-                flexDirection: 'column',
-              }}>
-                <div style={{
-                  padding: '24px',
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  background: 'var(--surface)',
-                }}>
-                  {isEditMode ? (
-                    <textarea
-                      value={editedBackText}
-                      onChange={(e) => setEditedBackText(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        fontSize: '18px',
-                        minHeight: '200px',
-                        textAlign: 'center',
-                        border: '1px solid var(--muted)',
-                        borderRadius: 'var(--radius)',
-                        background: 'var(--surface)',
-                        color: 'var(--text)',
-                        resize: 'vertical',
-                      }}
-                    />
-                  ) : (
-                    <p style={{
-                      margin: 0,
-                      fontSize: '18px',
-                      textAlign: 'center',
-                    }}>
-                      {focusedCard.backText}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Navigation Buttons */}
-            <div style={{
-              position: 'absolute',
-              top: '200px',
-              left: '0',
-              transform: 'translateY(-50%)',
-              zIndex: 2,
-            }}>
-              <button
-                onClick={() => navigateCards('prev')}
-                className="btn-ghost"
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '20px',
-                  padding: 0,
-                  display: 'grid',
-                  placeItems: 'center',
-                  fontSize: '24px',
-                }}
-                aria-label="Previous card"
-              >
-                ←
-              </button>
-            </div>
-            <div style={{
-              position: 'absolute',
-              top: '200px',
-              right: '0',
-              transform: 'translateY(-50%)',
-              zIndex: 2,
-            }}>
-              <button
-                onClick={() => navigateCards('next')}
-                className="btn-ghost"
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '20px',
-                  padding: 0,
-                  display: 'grid',
-                  placeItems: 'center',
-                  fontSize: '24px',
-                }}
-                aria-label="Next card"
-              >
-                →
-              </button>
-            </div>
-
-            </div>
-            
-            {/* Action Buttons */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '12px',
-              marginTop: '24px'
-            }}>
-              {isEditMode ? (
-                <>
-                  <button
-                    onClick={() => {
-                      setIsEditMode(false);
-                      setEditedFrontText(focusedCard.frontText);
-                      setEditedBackText(focusedCard.backText);
-                    }}
-                    className="btn-ghost"
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleEditCard}
-                    className="btn-primary"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => {
-                      setEditingFlashcard(focusedCard);
-                      setFrontText(focusedCard.frontText);
-                      setBackText(focusedCard.backText);
-                      setIsFlashcardModalOpen(true);
-                      setIsFocusModalOpen(false);
-                    }}
-                    className="btn-ghost"
-                    style={{
-                      color: 'var(--primary)',
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={handleDeleteCard}
-                    className="btn-ghost"
-                    style={{
-                      color: 'var(--error)',
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Deleting...' : 'Delete'}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </Modal>
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        message="Upgrade to Premium to create unlimited topics and unlock more features!"
+      />
     </div>
   );
 }
