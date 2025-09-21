@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import './App.css';
 import Login from './pages/Login';
+import Home from './pages/Home';
 
 /**
  * PUBLIC_INTERFACE
@@ -163,10 +165,15 @@ function HomePage() {
 }
 
 function App() {
+  const { user } = useAuth();
+
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<Login />} />
+      <Route path="/" element={user ? <Navigate to="/home" /> : <HomePage />} />
+      <Route path="/login" element={user ? <Navigate to="/home" /> : <Login />} />
+      <Route path="/home" element={<Home />} />
+      <Route path="/practice" element={<Navigate to="/home" />} /> {/* Placeholder */}
+      <Route path="/subjects/new" element={<Navigate to="/home" />} /> {/* Placeholder */}
     </Routes>
   );
 }

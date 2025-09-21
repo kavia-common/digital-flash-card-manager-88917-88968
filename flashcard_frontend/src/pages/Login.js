@@ -33,7 +33,7 @@ function Login() {
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
-      navigate('/');
+      navigate('/home');
     } catch (err) {
       setError(
         err.code === 'auth/weak-password'
