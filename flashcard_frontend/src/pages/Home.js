@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { collection, getDocs, addDoc, query, where, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import Navbar from '../components/layout/Navbar';
+import ProgressBar from '../components/ui/ProgressBar';
 
 // Set up Modal for accessibility
 Modal.setAppElement('#root');
@@ -173,55 +174,17 @@ function Home() {
       {/* Main Content */}
       <main className="section">
         <div className="container">
-          {/* Progress Bar for Free Users */}
+          {/* Subject limit progress for Free Users */}
           {userType === 'free' && (
-            <div style={{
-              background: 'color-mix(in srgb, var(--primary) 10%, transparent)',
-              padding: '16px',
-              borderRadius: 'var(--radius)',
-              marginBottom: '24px'
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '8px'
-              }}>
-                <span style={{
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: 'var(--primary)'
-                }}>
-                  {subjects.length}/{MAX_FREE_SUBJECTS} Subjects Used
-                </span>
-                <button
-                  className="btn-ghost"
-                  style={{
-                    padding: '6px 12px',
-                    fontSize: '14px',
-                    color: 'var(--primary)',
-                    borderColor: 'var(--primary)'
-                  }}
-                  onClick={() => navigate('/upgrade')}
-                >
-                  Upgrade to Premium
-                </button>
-              </div>
-              <div style={{
-                width: '100%',
-                height: '6px',
-                background: 'color-mix(in srgb, var(--primary) 20%, transparent)',
-                borderRadius: '3px',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  width: `${(subjects.length / MAX_FREE_SUBJECTS) * 100}%`,
-                  height: '100%',
-                  background: 'var(--primary)',
-                  transition: 'width 0.3s ease'
-                }} />
-              </div>
-            </div>
+            <ProgressBar
+              value={subjects.length}
+              maxValue={MAX_FREE_SUBJECTS}
+              label={`${subjects.length}/${MAX_FREE_SUBJECTS} Subjects Used`}
+              button={{
+                text: "Upgrade to Premium",
+                onClick: () => navigate('/upgrade')
+              }}
+            />
           )}
 
           <div style={{

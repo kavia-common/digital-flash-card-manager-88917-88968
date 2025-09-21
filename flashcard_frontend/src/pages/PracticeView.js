@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/layout/Navbar';
+import ProgressBar from '../components/ui/ProgressBar';
 import { collection, getDocs, query, where, getDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
@@ -273,22 +274,20 @@ function PracticeView() {
             }}>
               Flashcards
             </h2>
-            <span className="pill" style={{
-              background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
-              color: 'var(--primary)',
-              fontSize: '12px',
-              fontWeight: '600'
-            }}>
-              {currentCardIndex + 1} / {flashcards.length}
-            </span>
           </div>
+
+          <ProgressBar
+            value={currentCardIndex + 1}
+            maxValue={flashcards.length}
+            label={`Card ${currentCardIndex + 1} of ${flashcards.length}`}
+          />
 
           {/* Flashcards List - Now non-interactive */}
           <div style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px'
+            gap: '8px',
+            marginTop: '16px'
           }}>
             {flashcards.map((card, index) => {
               const stats = answerStats[card.id];
@@ -331,25 +330,11 @@ function PracticeView() {
                     {card.frontText}
                   </div>
                   {total > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: '3px',
-                      background: '#eee',
-                      overflow: 'hidden'
-                    }}>
-                      <div style={{
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: `${(stats.correct / total) * 100}%`,
-                        background: '#00ff00',
-                        transition: 'width 0.3s ease'
-                      }} />
-                    </div>
+                    <ProgressBar
+                      value={stats.correct}
+                      maxValue={total}
+                      label={`Success Rate: ${Math.round((stats.correct / total) * 100)}%`}
+                    />
                   )}
                 </div>
               );
@@ -413,16 +398,11 @@ function PracticeView() {
                   {currentCard.frontText}
                 </h2>
                 {totalAttempts > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '16px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    fontSize: '14px',
-                    color: 'var(--muted)'
-                  }}>
-                    Success rate: {successRate.toFixed(0)}% ({currentStats.correct}/{totalAttempts})
-                  </div>
+                  <ProgressBar
+                    value={currentStats.correct}
+                    maxValue={totalAttempts}
+                    label={`Success Rate: ${successRate.toFixed(0)}%`}
+                  />
                 )}
               </div>
 
