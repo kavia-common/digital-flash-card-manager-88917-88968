@@ -809,7 +809,16 @@ function SubjectView() {
           setIsEditMode(false);
           setError('');
         }}
-        style={modalStyles.focusedCard}
+        style={{
+          content: {
+            ...modalStyles.focusedCard.content,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '24px',
+            gap: '24px'
+          },
+          overlay: modalStyles.focusedCard.overlay
+        }}
         contentLabel="View Flashcard"
       >
         {focusedCard && (
@@ -820,18 +829,23 @@ function SubjectView() {
             perspective: '1000px',
           }}>
             {/* Card Container */}
-            <div
-              style={{
-                position: 'relative',
-                width: '100%',
-                minHeight: '400px',
-                transformStyle: 'preserve-3d',
-                transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0)',
-                transition: 'transform 0.6s',
-              }}
-              onMouseEnter={() => !isEditMode && setIsFlipped(true)}
-              onMouseLeave={() => !isEditMode && setIsFlipped(false)}
-            >
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  height: '400px',
+                  transformStyle: 'preserve-3d',
+                  transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0)',
+                  transition: 'transform 0.6s',
+                  background: 'var(--surface)',
+                  borderRadius: 'var(--radius)',
+                  boxShadow: 'var(--shadow-lg)',
+                  border: '1px solid var(--border-color)',
+                }}
+                onMouseEnter={() => !isEditMode && setIsFlipped(true)}
+                onMouseLeave={() => !isEditMode && setIsFlipped(false)}
+              >
               {/* Front Side */}
               <div style={{
                 position: 'absolute',
@@ -843,12 +857,11 @@ function SubjectView() {
               }}>
                 <div style={{
                   padding: '24px',
-                  flex: 1,
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  background: 'var(--surface)',
+                  height: '100%',
                 }}>
                   {isEditMode ? (
                     <input
@@ -928,11 +941,11 @@ function SubjectView() {
               </div>
             </div>
 
-            {/* Navigation and Action Buttons */}
+            {/* Navigation Buttons */}
             <div style={{
               position: 'absolute',
-              top: '50%',
-              left: '24px',
+              top: '200px',
+              left: '0',
               transform: 'translateY(-50%)',
               zIndex: 2,
             }}>
@@ -955,8 +968,8 @@ function SubjectView() {
             </div>
             <div style={{
               position: 'absolute',
-              top: '50%',
-              right: '24px',
+              top: '200px',
+              right: '0',
               transform: 'translateY(-50%)',
               zIndex: 2,
             }}>
@@ -978,19 +991,14 @@ function SubjectView() {
               </button>
             </div>
 
-            {/* Bottom Action Bar */}
+            </div>
+            
+            {/* Action Buttons */}
             <div style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              padding: '16px 24px',
-              background: 'var(--surface)',
-              borderTop: '1px solid var(--border-color)',
               display: 'flex',
               justifyContent: 'center',
               gap: '12px',
-              zIndex: 2,
+              marginTop: '24px'
             }}>
               {isEditMode ? (
                 <>
