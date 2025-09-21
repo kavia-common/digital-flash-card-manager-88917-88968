@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Modal from 'react-modal';
 import { useAuth } from '../context/AuthContext';
+import FlashcardStats from '../components/flashcard/FlashcardStats';
 import { 
   collection, 
   getDocs, 
@@ -595,37 +596,10 @@ function SubjectView() {
                           </div>
                         )}
                       </div>
-                      {/* VS Bar for Right/Wrong Statistics */}
-                      <div style={{
-                        position: 'absolute',
-                        bottom: '12px',
-                        left: '16px',
-                        right: '16px',
-                        height: '6px',
-                        background: '#eee',
-                        borderRadius: '3px',
-                        overflow: 'hidden',
-                      }}>
-                        {/* Using mock stats for now - to be replaced with real stats */}
-                        <div style={{
-                          position: 'absolute',
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          width: '60%',
-                          background: '#00ff00',
-                          transition: 'width 0.3s ease-in-out',
-                        }} />
-                        <div style={{
-                          position: 'absolute',
-                          right: 0,
-                          top: 0,
-                          bottom: 0,
-                          width: '40%', // Mock percentage
-                          background: '#ff0000',
-                          transition: 'width 0.3s ease-in-out',
-                        }} />
-                      </div>
+                      <FlashcardStats 
+                        correct={card.correctCount || 0}
+                        incorrect={card.incorrectCount || 0}
+                      />
                     </div>
                   </div>
                 ))

@@ -16,7 +16,7 @@ function FlashcardStats({ correct = 0, incorrect = 0 }) {
       left: '16px',
       right: '16px',
       height: '6px',
-      background: '#eee',
+      background: 'color-mix(in srgb, var(--text) 10%, transparent)',
       borderRadius: '3px',
       overflow: 'hidden',
     }}>
@@ -26,7 +26,7 @@ function FlashcardStats({ correct = 0, incorrect = 0 }) {
         top: 0,
         bottom: 0,
         width: `${correctPercentage}%`,
-        background: '#00ff00',
+        background: 'var(--success)',
         transition: 'width 0.3s ease-in-out',
       }} />
       <div style={{
