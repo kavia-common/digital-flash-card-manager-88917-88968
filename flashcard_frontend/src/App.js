@@ -5,6 +5,7 @@ import './App.css';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import SubjectView from './pages/SubjectView';
+import PracticeView from './pages/PracticeView';
 
 /**
  * PUBLIC_INTERFACE
@@ -173,7 +174,7 @@ function App() {
       <Route path="/" element={user ? <Navigate to="/home" /> : <HomePage />} />
       <Route path="/login" element={user ? <Navigate to="/home" /> : <Login />} />
       <Route path="/home" element={<Home />} />
-      <Route path="/practice" element={<Navigate to="/home" />} /> {/* Placeholder */}
+      <Route path="/subjects/:subjectId/practice/:topicId" element={<PracticeView />} />
       <Route path="/subjects/new" element={<Navigate to="/home" />} /> {/* Placeholder */}
       <Route path="/subjects/:subjectId" element={<SubjectView />} />
     </Routes>

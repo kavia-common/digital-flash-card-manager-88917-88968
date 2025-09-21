@@ -344,7 +344,7 @@ function SubjectView() {
             </h1>
           </div>
           <Link
-            to={`/practice?subjectId=${subjectId}`}
+            to={`/subjects/${subjectId}/practice/${selectedTopic?.id || 'all'}`}
             className="btn-primary"
             style={{
               padding: '8px 16px',
