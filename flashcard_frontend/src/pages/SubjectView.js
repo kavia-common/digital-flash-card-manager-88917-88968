@@ -325,22 +325,21 @@ function SubjectView() {
               <h1 className="section-title">
                 {selectedTopic ? selectedTopic.title : 'All Flashcards'}
               </h1>
-              {topics.length === 0 ? (
+              {topics.length === 0 && (
                 <button 
                   className="btn-primary"
                   onClick={() => setIsTopicModalOpen(true)}
                 >
                   + Create Topic
                 </button>
-              ) : (
-                selectedTopic && (
-                  <button 
-                    className="btn-primary"
-                    onClick={() => setIsFlashcardModalOpen(true)}
-                  >
-                    + Create Flashcard
-                  </button>
-                )
+              )}
+              {topics.length > 0 && selectedTopic && (
+                <button 
+                  className="btn-primary"
+                  onClick={() => setIsFlashcardModalOpen(true)}
+                >
+                  + Create Flashcard
+                </button>
               )}
             </div>
 
@@ -412,9 +411,17 @@ function SubjectView() {
                   <p style={{ margin: '0 0 24px' }}>
                     Create your first flashcard to start learning
                   </p>
-                  <button className="btn-primary" onClick={() => setIsFlashcardModalOpen(true)}>
-                    Create Flashcard
-                  </button>
+                  {topics.length === 0 ? (
+                    <button className="btn-primary" onClick={() => setIsTopicModalOpen(true)}>
+                      Create Topic
+                    </button>
+                  ) : (
+                    selectedTopic && (
+                      <button className="btn-primary" onClick={() => setIsFlashcardModalOpen(true)}>
+                        Create Flashcard
+                      </button>
+                    )
+                  )}
                 </div>
               )}
             </div>
