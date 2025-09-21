@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Modal from 'react-modal';
 import { useAuth } from '../context/AuthContext';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   collection, 
   getDocs, 
@@ -29,8 +30,16 @@ function SubjectView() {
   const [topics, setTopics] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Topic modal state
+  const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
   const [newTopicName, setNewTopicName] = useState('');
+  
+  // Flashcard modal state
+  const [isFlashcardModalOpen, setIsFlashcardModalOpen] = useState(false);
+  const [frontText, setFrontText] = useState('');
+  const [backText, setBackText] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -91,6 +100,72 @@ function SubjectView() {
     fetchFlashcards();
   }, [user, subjectId, selectedTopic]);
 
+  const handleCreateFlashcard = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    // Validation
+    if (!frontText && !selectedImage) {
+      setError('Please provide either text or an image for the front side');
+      return;
+    }
+    if (!backText) {
+      setError('Please provide text for the back side');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      let frontImageUrl = '';
+      
+      // Upload image if selected
+      if (selectedImage) {
+        const storage = getStorage();
+        const imageRef = ref(storage, `flashcards/${user.uid}/${subjectId}/${Date.now()}_${selectedImage.name}`);
+        await uploadBytes(imageRef, selectedImage);
+        frontImageUrl = await getDownloadURL(imageRef);
+      }
+
+      // Create new flashcard
+      const flashcardsRef = collection(db, `users/${user.uid}/subjects/${subjectId}/flashcards`);
+      const newFlashcard = {
+        frontText: frontText.trim(),
+        frontImageUrl,
+        backText: backText.trim(),
+        topicId: selectedTopic?.id || null,
+        createdAt: new Date().toISOString()
+      };
+
+      const docRef = await addDoc(flashcardsRef, newFlashcard);
+      setFlashcards(prev => [...prev, { id: docRef.id, ...newFlashcard }]);
+
+      // Reset form
+      setFrontText('');
+      setBackText('');
+      setSelectedImage(null);
+      setImagePreview('');
+      setIsFlashcardModalOpen(false);
+    } catch (error) {
+      console.error("Error creating flashcard:", error);
+      setError('Failed to create flashcard. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCreateTopic = async (e) => {
     e.preventDefault();
     setError('');
@@ -122,7 +197,7 @@ function SubjectView() {
       const docRef = await addDoc(topicsRef, newTopic);
       setTopics(prev => [...prev, { id: docRef.id, ...newTopic }]);
       setNewTopicName('');
-      setIsModalOpen(false);
+      setIsTopicModalOpen(false);
     } catch (error) {
       console.error("Error creating topic:", error);
       setError('Failed to create topic. Please try again.');
@@ -193,7 +268,7 @@ function SubjectView() {
               Topics
             </h2>
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => setIsTopicModalOpen(true)}
               className="btn-ghost"
               style={{
                 padding: '6px 10px',
@@ -250,7 +325,10 @@ function SubjectView() {
               <h1 className="section-title">
                 {selectedTopic ? selectedTopic.title : 'All Flashcards'}
               </h1>
-              <button className="btn-primary">
+              <button 
+                className="btn-primary"
+                onClick={() => setIsFlashcardModalOpen(true)}
+              >
                 + Create Flashcard
               </button>
             </div>
@@ -333,11 +411,199 @@ function SubjectView() {
         </main>
       </div>
 
+      {/* Create Flashcard Modal */}
+      <Modal
+        isOpen={isFlashcardModalOpen}
+        onRequestClose={() => {
+          setIsFlashcardModalOpen(false);
+          setFrontText('');
+          setBackText('');
+          setSelectedImage(null);
+          setImagePreview('');
+          setError('');
+        }}
+        style={modalStyles}
+        contentLabel="Create New Flashcard"
+      >
+        <h2 style={{ 
+          margin: '0 0 16px',
+          fontSize: '24px',
+          fontWeight: '700'
+        }}>
+          Create New Flashcard
+        </h2>
+        <form onSubmit={handleCreateFlashcard}>
+          {/* Front Side */}
+          <div style={{ marginBottom: '24px' }}>
+            <label 
+              style={{ 
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: '600'
+              }}
+            >
+              Front Side (Text and/or Image)
+            </label>
+            <input
+              type="text"
+              value={frontText}
+              onChange={(e) => setFrontText(e.target.value)}
+              placeholder="Enter front side text (optional)"
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                marginBottom: '12px',
+                borderRadius: '12px',
+                border: '1px solid var(--muted)',
+                background: 'var(--surface)',
+                color: 'var(--text)',
+              }}
+            />
+            
+            <div style={{
+              marginTop: '12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                style={{ display: 'none' }}
+                id="image-upload"
+              />
+              <label 
+                htmlFor="image-upload"
+                className="btn-ghost"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                📷 Upload Image (optional)
+              </label>
+              
+              {imagePreview && (
+                <div style={{
+                  position: 'relative',
+                  width: '100%',
+                  maxWidth: '200px',
+                  marginTop: '8px'
+                }}>
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    style={{
+                      width: '100%',
+                      height: 'auto',
+                      borderRadius: '12px',
+                      border: '1px solid var(--muted)'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedImage(null);
+                      setImagePreview('');
+                    }}
+                    className="btn-ghost"
+                    style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      padding: '4px 8px',
+                      minWidth: 'unset',
+                      background: 'var(--surface)',
+                      borderRadius: '8px'
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Back Side */}
+          <div style={{ marginBottom: '24px' }}>
+            <label 
+              style={{ 
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: '600'
+              }}
+            >
+              Back Side (Required)
+            </label>
+            <textarea
+              value={backText}
+              onChange={(e) => setBackText(e.target.value)}
+              placeholder="Enter back side text"
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: '12px',
+                border: '1px solid var(--muted)',
+                background: 'var(--surface)',
+                color: 'var(--text)',
+                minHeight: '100px',
+                resize: 'vertical'
+              }}
+              required
+            />
+          </div>
+          
+          {error && (
+            <div style={{ 
+              padding: '12px',
+              marginBottom: '16px',
+              borderRadius: '12px',
+              background: 'rgba(239, 68, 68, 0.1)',
+              color: 'var(--error)',
+            }}>
+              {error}
+            </div>
+          )}
+          
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            justifyContent: 'flex-end'
+          }}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsFlashcardModalOpen(false);
+                setFrontText('');
+                setBackText('');
+                setSelectedImage(null);
+                setImagePreview('');
+                setError('');
+              }}
+              className="btn-ghost"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Creating...' : 'Create Flashcard'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
       {/* Create Topic Modal */}
       <Modal
-        isOpen={isModalOpen}
+        isOpen={isTopicModalOpen}
         onRequestClose={() => {
-          setIsModalOpen(false);
+          setIsTopicModalOpen(false);
           setNewTopicName('');
           setError('');
         }}
@@ -401,7 +667,7 @@ function SubjectView() {
             <button
               type="button"
               onClick={() => {
-                setIsModalOpen(false);
+                setIsTopicModalOpen(false);
                 setNewTopicName('');
                 setError('');
               }}
