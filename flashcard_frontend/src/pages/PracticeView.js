@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { collection, getDocs, query, where, getDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, query, where, getDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 /**
@@ -75,32 +75,56 @@ function PracticeView() {
     fetchData();
   }, [user, subjectId, topicId, navigate]);
 
-  const handleAnswer = (isCorrect) => {
-    const currentCard = flashcards[currentCardIndex];
-    
-    // Show feedback animation
-    setAnswerFeedback(isCorrect);
-    
-    // Update stats
-    setAnswerStats(prev => ({
-      ...prev,
-      [currentCard.id]: {
-        correct: prev[currentCard.id].correct + (isCorrect ? 1 : 0),
-        incorrect: prev[currentCard.id].incorrect + (isCorrect ? 0 : 1)
-      }
-    }));
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [isUpdatingStats, setIsUpdatingStats] = useState(false);
 
-    // Wait for feedback animation before advancing
-    setTimeout(() => {
-      if (currentCardIndex < flashcards.length - 1) {
-        setCurrentCardIndex(currentCardIndex + 1);
-      } else {
-        // Optional: Loop back to start
-        setCurrentCardIndex(0);
-      }
-      setIsFlipped(false);
-      setAnswerFeedback(null);
-    }, 700);
+  const handleAnswer = async (isCorrect) => {
+    if (isUpdatingStats) return;
+    
+    const currentCard = flashcards[currentCardIndex];
+    setIsUpdatingStats(true);
+    
+    try {
+      // Show feedback animation
+      setAnswerFeedback(isCorrect);
+      
+      // Update stats in Firestore
+      const cardRef = doc(db, `users/${user.uid}/subjects/${subjectId}/flashcards/${currentCard.id}`);
+      await updateDoc(cardRef, {
+        correctCount: increment(isCorrect ? 1 : 0),
+        incorrectCount: increment(isCorrect ? 0 : 1)
+      });
+      
+      // Update local stats
+      setAnswerStats(prev => ({
+        ...prev,
+        [currentCard.id]: {
+          correct: prev[currentCard.id].correct + (isCorrect ? 1 : 0),
+          incorrect: prev[currentCard.id].incorrect + (isCorrect ? 0 : 1)
+        }
+      }));
+
+      // Wait for feedback animation before advancing
+      setTimeout(() => {
+        if (currentCardIndex < flashcards.length - 1) {
+          setCurrentCardIndex(currentCardIndex + 1);
+        } else {
+          // Show completion modal
+          setShowCompletionModal(true);
+          // Navigate back after 2 seconds
+          setTimeout(() => {
+            navigate(`/subjects/${subjectId}`);
+          }, 2000);
+        }
+        setIsFlipped(false);
+        setAnswerFeedback(null);
+      }, 700);
+    } catch (error) {
+      console.error("Error updating flashcard stats:", error);
+      // Consider showing an error message to the user
+    } finally {
+      setIsUpdatingStats(false);
+    }
   };
 
   if (isLoading) {
@@ -532,8 +556,69 @@ function PracticeView() {
           </div>
         </main>
       </div>
+
+      {/* Completion Modal */}
+      {showCompletionModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            background: 'var(--surface)',
+            padding: '40px',
+            borderRadius: 'var(--radius)',
+            boxShadow: 'var(--shadow-lg)',
+            textAlign: 'center',
+            maxWidth: '400px',
+            width: '90%',
+            animation: 'fadeInScale 0.3s ease',
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>
+              🎉
+            </div>
+            <h2 style={{ 
+              margin: '0 0 8px',
+              fontSize: '24px',
+              fontWeight: '700'
+            }}>
+              Practice Completed!
+            </h2>
+            <p style={{
+              margin: '0',
+              color: 'var(--muted)'
+            }}>
+              Great job! Returning to subject view...
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+// Add keyframe animation for modal
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+`;
+document.head.appendChild(style);
 
 export default PracticeView;
