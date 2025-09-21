@@ -249,6 +249,11 @@ function SubjectView() {
       return;
     }
 
+    if (userType === 'free' && topics.length >= 3) {
+      setError('You have reached the maximum number of topics (3) for free users. Please upgrade to Premium to create more topics.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // Check for duplicate topic names
@@ -354,16 +359,32 @@ function SubjectView() {
             }}>
               Topics
             </h2>
-            <button
-              onClick={() => setIsTopicModalOpen(true)}
-              className="btn-ghost"
-              style={{
-                padding: '6px 10px',
-                fontSize: '14px'
-              }}
-            >
-              + New Topic
-            </button>
+            {userType === 'free' && topics.length >= 3 ? (
+              <button
+                className="btn-ghost"
+                style={{
+                  padding: '6px 10px',
+                  fontSize: '14px',
+                  opacity: 0.5,
+                  cursor: 'not-allowed'
+                }}
+                disabled
+                title="Upgrade to Premium to create more topics"
+              >
+                + New Topic
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsTopicModalOpen(true)}
+                className="btn-ghost"
+                style={{
+                  padding: '6px 10px',
+                  fontSize: '14px'
+                }}
+              >
+                + New Topic
+              </button>
+            )}
           </div>
 
           {/* Topics List */}
@@ -448,7 +469,52 @@ function SubjectView() {
               marginBottom: '24px'
             }}>
               <div>
-                {/* Show progress bar for free users */}
+                {/* Topics limit progress bar for free users */}
+                {userType === 'free' && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ 
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '8px'
+                    }}>
+                      <span style={{
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: 'var(--primary)'
+                      }}>
+                        {`${topics.length}/3 Topics Used`}
+                      </span>
+                      {topics.length >= 3 && (
+                        <span style={{
+                          fontSize: '12px',
+                          color: 'var(--error)',
+                          fontWeight: '500'
+                        }}>
+                          Topic limit reached
+                        </span>
+                      )}
+                    </div>
+                    <div style={{
+                      height: '6px',
+                      background: 'color-mix(in srgb, var(--text) 10%, transparent)',
+                      borderRadius: '3px',
+                      overflow: 'hidden',
+                      position: 'relative'
+                    }}>
+                      <div style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: `${(topics.length / 3) * 100}%`,
+                        background: topics.length >= 3 ? 'var(--error)' : 'var(--primary)',
+                        transition: 'width 0.3s ease-in-out',
+                      }} />
+                    </div>
+                  </div>
+                )}
+                {/* Success rate progress bar for free users */}
                 {userType === 'free' && flashcards.length > 0 && (
                   <div style={{ marginBottom: '16px' }}>
                     <div style={{ 
@@ -478,6 +544,7 @@ function SubjectView() {
                       background: 'color-mix(in srgb, var(--text) 10%, transparent)',
                       borderRadius: '3px',
                       overflow: 'hidden',
+                      position: 'relative'
                     }}>
                       {(() => {
                         const totalCorrect = flashcards.reduce((sum, card) => sum + (card.correctCount || 0), 0);
@@ -575,17 +642,39 @@ function SubjectView() {
                         marginBottom: '8px'
                       }}>
                         {/* Topic Chip */}
-                        {card.topicId && (
-                          <div className="pill" style={{
-                            background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
-                            border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
-                            color: 'var(--primary)',
-                            fontSize: '12px',
-                            fontWeight: '600'
-                          }}>
-                            {topics.find(t => t.id === card.topicId)?.title || 'Unknown Topic'}
-                          </div>
-                        )}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}>
+                          {card.topicId && (
+                            <div className="pill" style={{
+                              background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
+                              border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
+                              color: 'var(--primary)',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}>
+                              {topics.find(t => t.id === card.topicId)?.title || 'Unknown Topic'}
+                            </div>
+                          )}
+                          <button 
+                            className="btn-ghost"
+                            style={{
+                              padding: '6px',
+                              minWidth: 'unset',
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingFlashcard(card);
+                              setFrontText(card.frontText);
+                              setBackText(card.backText);
+                              setIsFlashcardModalOpen(true);
+                            }}
+                          >
+                            ✏️
+                          </button>
+                        </div>
 =======
                         <button 
                           className="btn-ghost"
@@ -662,9 +751,23 @@ function SubjectView() {
                     Create your first flashcard to start learning
                   </p>
                   {topics.length === 0 ? (
-                    <button className="btn-primary" onClick={() => setIsTopicModalOpen(true)}>
-                      Create Topic
-                    </button>
+                    userType === 'free' && topics.length >= 3 ? (
+                      <button 
+                        className="btn-primary"
+                        style={{
+                          opacity: 0.5,
+                          cursor: 'not-allowed'
+                        }}
+                        disabled
+                        title="Upgrade to Premium to create more topics"
+                      >
+                        Create Topic
+                      </button>
+                    ) : (
+                      <button className="btn-primary" onClick={() => setIsTopicModalOpen(true)}>
+                        Create Topic
+                      </button>
+                    )
                   ) : (
                     selectedTopic && (
                       <button className="btn-primary" onClick={() => setIsFlashcardModalOpen(true)}>
