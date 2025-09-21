@@ -843,8 +843,7 @@ function SubjectView() {
                   boxShadow: 'var(--shadow-lg)',
                   border: '1px solid var(--border-color)',
                 }}
-                onMouseEnter={() => !isEditMode && setIsFlipped(true)}
-                onMouseLeave={() => !isEditMode && setIsFlipped(false)}
+                onClick={() => !isEditMode && setIsFlipped(!isFlipped)}
               >
               {/* Front Side */}
               <div style={{
