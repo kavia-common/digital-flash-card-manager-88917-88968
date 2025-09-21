@@ -41,6 +41,7 @@ function SubjectView() {
   const [backText, setBackText] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingFlashcard, setEditingFlashcard] = useState(null);
   
   // Focused flashcard modal state
   const [focusedCard, setFocusedCard] = useState(null);
@@ -187,28 +188,45 @@ function SubjectView() {
     setIsSubmitting(true);
 
     try {
-      // Create new flashcard
-      const flashcardsRef = collection(db, `users/${user.uid}/subjects/${subjectId}/flashcards`);
-      const newFlashcard = {
+      const flashcardData = {
         frontText: frontText.trim(),
         backText: backText.trim(),
         topicId: selectedTopic?.id || null,
-        createdAt: new Date().toISOString(),
-        correctCount: 0,
-        incorrectCount: 0,
-        totalAttempts: 0
       };
 
-      const docRef = await addDoc(flashcardsRef, newFlashcard);
-      setFlashcards(prev => [...prev, { id: docRef.id, ...newFlashcard }]);
+      if (editingFlashcard) {
+        // Update existing flashcard
+        const cardRef = doc(db, `users/${user.uid}/subjects/${subjectId}/flashcards/${editingFlashcard.id}`);
+        await updateDoc(cardRef, flashcardData);
+        
+        setFlashcards(prev => prev.map(card => 
+          card.id === editingFlashcard.id 
+            ? { ...card, ...flashcardData }
+            : card
+        ));
+      } else {
+        // Create new flashcard
+        const flashcardsRef = collection(db, `users/${user.uid}/subjects/${subjectId}/flashcards`);
+        const newFlashcard = {
+          ...flashcardData,
+          createdAt: new Date().toISOString(),
+          correctCount: 0,
+          incorrectCount: 0,
+          totalAttempts: 0
+        };
+
+        const docRef = await addDoc(flashcardsRef, newFlashcard);
+        setFlashcards(prev => [...prev, { id: docRef.id, ...newFlashcard }]);
+      }
 
       // Reset form
       setFrontText('');
       setBackText('');
       setIsFlashcardModalOpen(false);
+      setEditingFlashcard(null);
     } catch (error) {
-      console.error("Error creating flashcard:", error);
-      setError('Failed to create flashcard. Please try again.');
+      console.error("Error saving flashcard:", error);
+      setError('Failed to save flashcard. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -484,6 +502,13 @@ function SubjectView() {
                             padding: '6px',
                             minWidth: 'unset',
                           }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingFlashcard(card);
+                            setFrontText(card.frontText);
+                            setBackText(card.backText);
+                            setIsFlashcardModalOpen(true);
+                          }}
                         >
                           ✏️
                         </button>
@@ -610,7 +635,7 @@ function SubjectView() {
           fontSize: '24px',
           fontWeight: '700'
         }}>
-          Create New Flashcard
+          {editingFlashcard ? 'Edit Flashcard' : 'Create New Flashcard'}
         </h2>
         <form onSubmit={handleCreateFlashcard}>
           {/* Front Side */}
@@ -705,7 +730,7 @@ function SubjectView() {
               className="btn-primary"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Creating...' : 'Create Flashcard'}
+              {isSubmitting ? 'Saving...' : editingFlashcard ? 'Save Changes' : 'Create Flashcard'}
             </button>
           </div>
         </form>
@@ -1024,8 +1049,11 @@ function SubjectView() {
                 <>
                   <button
                     onClick={() => {
-                      setIsEditMode(true);
-                      setIsFlipped(false);
+                      setEditingFlashcard(focusedCard);
+                      setFrontText(focusedCard.frontText);
+                      setBackText(focusedCard.backText);
+                      setIsFlashcardModalOpen(true);
+                      setIsFocusModalOpen(false);
                     }}
                     className="btn-ghost"
                     style={{
