@@ -531,9 +531,23 @@ function SubjectView() {
                     }}>
                       <div style={{
                         display: 'flex',
-                        justifyContent: 'flex-end',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                         marginBottom: '8px'
                       }}>
+                        {/* Topic Chip */}
+                        {card.topicId && (
+                          <div className="pill" style={{
+                            background: 'color-mix(in srgb, var(--primary) 8%, transparent)',
+                            border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)',
+                            color: 'var(--primary)',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            {topics.find(t => t.id === card.topicId)?.title || 'Unknown Topic'}
+                          </div>
+                        )}
+=======
                         <button 
                           className="btn-ghost"
                           style={{
