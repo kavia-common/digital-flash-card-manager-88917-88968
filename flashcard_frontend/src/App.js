@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Link } from 'react-router-dom';
 import './App.css';
+import Login from './pages/Login';
 
 /**
  * PUBLIC_INTERFACE
- * App is the entry component rendering a modern landing page for the
- * Digital Flash Card Manager. It applies the Ocean Professional theme,
- * introduces features, and includes a primary CTA.
+ * App is the entry component handling routing and rendering the main layout
+ * for the Digital Flash Card Manager. It applies the Ocean Professional theme.
  */
-function App() {
+function HomePage() {
   const [theme, setTheme] = useState('light');
 
   // Apply theme to the html element for CSS var switching
@@ -29,7 +30,7 @@ function App() {
             <span className="brand-icon">📘</span>
             <span className="brand-text">Digital Flash Card Manager</span>
           </div>
-          <div className="nav-actions">
+          <div className="nav-actions" style={{ display: 'flex', gap: '12px' }}>
             <button
               className="btn-ghost"
               onClick={toggleTheme}
@@ -37,7 +38,7 @@ function App() {
             >
               {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
             </button>
-            <a href="#get-started" className="btn-primary">Get Started</a>
+            <Link to="/login" className="btn-primary">Sign In</Link>
           </div>
         </div>
       </nav>
@@ -54,7 +55,7 @@ function App() {
               Create, manage, and review decks with a clean, modern interface. Build your knowledge with spaced repetition and effortless organization.
             </p>
             <div className="hero-cta">
-              <a id="get-started" href="#features" className="btn-primary btn-lg">Create Your First Deck</a>
+              <Link to="/login" className="btn-primary btn-lg">Create an Account for Free</Link>
               <a href="#learn-more" className="btn-ghost btn-lg">Learn More</a>
             </div>
             <div className="hero-stats">
@@ -142,7 +143,7 @@ function App() {
             <h2 className="cta-title">Ready to level up your learning?</h2>
             <p className="cta-subtitle">Start building your first deck in seconds.</p>
           </div>
-          <a href="#get-started" className="btn-inverse btn-lg">Get Started</a>
+          <Link to="/login" className="btn-inverse btn-lg">Create an Account for Free</Link>
         </div>
       </section>
 
@@ -158,6 +159,15 @@ function App() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<Login />} />
+    </Routes>
   );
 }
 
