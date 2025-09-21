@@ -1,33 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import Modal from 'react-modal';
 import { useAuth } from '../context/AuthContext';
-import CreateSubjectModal from '../modals/CreateSubjectModal';
-import DeleteSubjectModal from '../modals/DeleteSubjectModal';
-import UpgradeModal from '../modals/UpgradeModal';
 import { collection, getDocs, addDoc, query, where, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase/config';
+
+// Set up Modal for accessibility
+Modal.setAppElement('#root');
 
 /**
  * PUBLIC_INTERFACE
  * Home page component showing user's subjects and navigation
  */
 function Home() {
-  const { user, userRole, logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [subjects, setSubjects] = useState([]);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [newSubjectName, setNewSubjectName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [theme, setTheme] = useState('light');
-
-  useEffect(() => {
-    // Apply theme
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState(null);
 
   useEffect(() => {
     // Redirect if not logged in
@@ -62,27 +57,45 @@ function Home() {
     }
   };
 
-  const handleCreateSubject = async (subjectName) => {
-    // Free user limit check is now handled in CreateSubjectModal
-
-    // Check for duplicate subject names
-    const subjectsRef = collection(db, `users/${user.uid}/subjects`);
-    const q = query(subjectsRef, where("title", "==", subjectName));
-    const querySnapshot = await getDocs(q);
+  const handleCreateSubject = async (e) => {
+    e.preventDefault();
+    setError('');
     
-    if (!querySnapshot.empty) {
-      throw new Error('A subject with this name already exists');
+    if (!newSubjectName.trim()) {
+      setError('Please enter a subject name');
+      return;
     }
 
-    // Create new subject
-    const newSubject = {
-      title: subjectName,
-      createdAt: new Date().toISOString(),
-      cardCount: 0
-    };
+    setIsSubmitting(true);
+    try {
+      // Check for duplicate subject names
+      const subjectsRef = collection(db, `users/${user.uid}/subjects`);
+      const q = query(subjectsRef, where("title", "==", newSubjectName.trim()));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        setError('A subject with this name already exists');
+        setIsSubmitting(false);
+        return;
+      }
 
-    const docRef = await addDoc(subjectsRef, newSubject);
-    setSubjects(prev => [...prev, { id: docRef.id, ...newSubject }]);
+      // Create new subject
+      const newSubject = {
+        title: newSubjectName.trim(),
+        createdAt: new Date().toISOString(),
+        cardCount: 0
+      };
+
+      const docRef = await addDoc(subjectsRef, newSubject);
+      setSubjects(prev => [...prev, { id: docRef.id, ...newSubject }]);
+      setNewSubjectName('');
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error creating subject:", error);
+      setError('Failed to create subject. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDeleteSubject = async () => {
@@ -94,12 +107,40 @@ function Home() {
       setSubjects(prev => prev.filter(subject => subject.id !== selectedSubject.id));
       setIsDeleteModalOpen(false);
       setSelectedSubject(null);
+      
+      // TODO: Implement recursive deletion of topics and flashcards
+      // This would require either:
+      // 1. Using a Cloud Function to handle cascading deletes
+      // 2. Implementing client-side deletion of all subcollections
+      
     } catch (error) {
       console.error("Error deleting subject:", error);
       setError('Failed to delete subject. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Custom styles for Modal following Ocean Professional theme
+  const modalStyles = {
+    content: {
+      top: '50%',
+      left: '50%',
+      right: 'auto',
+      bottom: 'auto',
+      transform: 'translate(-50%, -50%)',
+      maxWidth: '400px',
+      width: '90%',
+      padding: '24px',
+      borderRadius: 'var(--radius)',
+      border: '1px solid var(--border-color)',
+      background: 'var(--surface)',
+      boxShadow: 'var(--shadow-lg)',
+    },
+    overlay: {
+      backgroundColor: 'rgba(0, 0, 0, 0.75)',
+      zIndex: 1000,
+    },
   };
 
   return (
@@ -116,13 +157,10 @@ function Home() {
             alignItems: 'center',
             gap: '24px'
           }}>
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <button 
-                className="btn-ghost"
-                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-              >
-                {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
-              </button>
+            <div style={{
+              display: 'flex',
+              gap: '16px'
+            }}>
               <Link 
                 to="/practice" 
                 className="btn-ghost"
@@ -216,28 +254,22 @@ function Home() {
                       fontSize: '14px',
                       color: 'var(--muted)'
                     }}>
-                      {userRole === 'premium' ? '✨ Premium User' : '🆓 Free User'}
+                      {user?.email}
                     </div>
                   </div>
                   <div style={{ padding: '8px 0' }}>
-                    {userRole === 'free' && (
-                      <button 
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          setIsUpgradeModalOpen(true);
-                        }}
-                        className="btn-ghost"
-                        style={{
-                          width: '100%',
-                          justifyContent: 'flex-start',
-                          padding: '8px 16px',
-                          color: 'var(--primary)',
-                          fontWeight: '600'
-                        }}
-                      >
-                        ✨ Upgrade to Premium
-                      </button>
-                    )}
+                    <button 
+                      className="btn-ghost"
+                      style={{
+                        width: '100%',
+                        justifyContent: 'flex-start',
+                        padding: '8px 16px',
+                        color: 'var(--muted)',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Become Premium
+                    </button>
                     <button 
                       onClick={handleLogout}
                       className="btn-ghost"
@@ -265,16 +297,11 @@ function Home() {
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'flex-start',
+            alignItems: 'center',
             marginBottom: '32px'
           }}>
             <div>
               <h1 className="section-title">My Subjects</h1>
-              {userRole === 'free' && (
-                <p className="section-subtitle" style={{ marginBottom: '8px' }}>
-                  {subjects.length}/3 subjects used (Free Plan)
-                </p>
-              )}
               <p className="section-subtitle">Create and manage your study subjects</p>
             </div>
             <button 
@@ -291,12 +318,102 @@ function Home() {
             </button>
           </div>
 
+          {/* Create Subject Modal */}
+          <Modal
+            isOpen={isModalOpen}
+            onRequestClose={() => {
+              setIsModalOpen(false);
+              setNewSubjectName('');
+              setError('');
+            }}
+            style={modalStyles}
+            contentLabel="Create New Subject"
+          >
+            <h2 style={{ 
+              margin: '0 0 16px',
+              fontSize: '24px',
+              fontWeight: '700'
+            }}>
+              Create New Subject
+            </h2>
+            <form onSubmit={handleCreateSubject}>
+              <div style={{ marginBottom: '16px' }}>
+                <label 
+                  htmlFor="subjectName" 
+                  style={{ 
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontWeight: '600'
+                  }}
+                >
+                  Subject Name
+                </label>
+                <input
+                  id="subjectName"
+                  type="text"
+                  value={newSubjectName}
+                  onChange={(e) => setNewSubjectName(e.target.value)}
+                  placeholder="Enter subject name"
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    border: '1px solid var(--muted)',
+                    background: 'var(--surface)',
+                    color: 'var(--text)',
+                  }}
+                  required
+                />
+              </div>
+              
+              {error && (
+                <div style={{ 
+                  padding: '12px',
+                  marginBottom: '16px',
+                  borderRadius: '12px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  color: 'var(--error)',
+                }}>
+                  {error}
+                </div>
+              )}
+              
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                justifyContent: 'flex-end'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setNewSubjectName('');
+                    setError('');
+                  }}
+                  className="btn-ghost"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Creating...' : 'Create Subject'}
+                </button>
+              </div>
+            </form>
+          </Modal>
+
           {/* Subjects Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '24px'
-          }}>
+          <div 
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '24px'
+            }}
+          >
             {subjects.length > 0 ? (
               subjects.map(subject => (
                 <div
@@ -347,15 +464,17 @@ function Home() {
                 </div>
               ))
             ) : (
-              <div style={{
-                gridColumn: '1 / -1',
-                textAlign: 'center',
-                padding: '60px 20px',
-                color: 'var(--muted)',
-                background: 'var(--surface)',
-                borderRadius: 'var(--radius)',
-                border: '1px solid var(--border-color)'
-              }}>
+              <div 
+                style={{
+                  gridColumn: '1 / -1',
+                  textAlign: 'center',
+                  padding: '60px 20px',
+                  color: 'var(--muted)',
+                  background: 'var(--surface)',
+                  borderRadius: 'var(--radius)',
+                  border: '1px solid var(--border-color)'
+                }}
+              >
                 <div style={{ fontSize: '40px', marginBottom: '16px' }}>
                   📚
                 </div>
@@ -378,37 +497,76 @@ function Home() {
               </div>
             )}
           </div>
+
+          {/* Delete Confirmation Modal */}
+          <Modal
+            isOpen={isDeleteModalOpen}
+            onRequestClose={() => {
+              setIsDeleteModalOpen(false);
+              setSelectedSubject(null);
+              setError('');
+            }}
+            style={modalStyles}
+            contentLabel="Delete Subject Confirmation"
+          >
+            <h2 style={{ 
+              margin: '0 0 16px',
+              fontSize: '24px',
+              fontWeight: '700'
+            }}>
+              Delete Subject
+            </h2>
+            <p style={{
+              marginBottom: '24px',
+              color: 'var(--muted)'
+            }}>
+              Are you sure you want to delete "{selectedSubject?.title}"? This action cannot be undone.
+            </p>
+            
+            {error && (
+              <div style={{ 
+                padding: '12px',
+                marginBottom: '16px',
+                borderRadius: '12px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                color: 'var(--error)',
+              }}>
+                {error}
+              </div>
+            )}
+            
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setSelectedSubject(null);
+                  setError('');
+                }}
+                className="btn-ghost"
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteSubject}
+                className="btn-ghost"
+                style={{
+                  color: 'var(--error)',
+                  borderColor: 'var(--error)'
+                }}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Deleting...' : 'Delete Subject'}
+              </button>
+            </div>
+          </Modal>
         </div>
       </main>
-
-      {/* Modals */}
-      <CreateSubjectModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreateSubject}
-        userRole={userRole}
-        subjectCount={subjects.length}
-        onUpgradeClick={() => {
-          setIsModalOpen(false);
-          setIsUpgradeModalOpen(true);
-        }}
-      />
-
-      <DeleteSubjectModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setSelectedSubject(null);
-        }}
-        onConfirm={handleDeleteSubject}
-        subject={selectedSubject}
-      />
-
-      <UpgradeModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-        message="Free users can only create up to 3 subjects. Upgrade to Premium for unlimited subjects!"
-      />
     </div>
   );
 }
