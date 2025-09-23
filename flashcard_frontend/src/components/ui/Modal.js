@@ -67,7 +67,4 @@ function Modal({
   );
 }
 
-// Set app element for accessibility
-Modal.setAppElement('#root');
-
 export default Modal;

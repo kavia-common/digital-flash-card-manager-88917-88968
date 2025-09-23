@@ -5,8 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import FlashcardStats from '../components/flashcard/FlashcardStats';
 import Navbar from '../components/layout/Navbar';
 import ProgressBar from '../components/ui/ProgressBar';
-import CreateFlashcardModal from '../modals/CreateFlashcardModal';
 import CreateTopicModal from '../modals/CreateTopicModal';
+import CreateFlashcardModal from '../modals/CreateFlashcardModal';
 import { 
   collection, 
   getDocs, 
@@ -38,6 +38,44 @@ function SubjectView() {
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
   const [theme, setTheme] = useState('light');
+  const [isCreateFlashcardModalOpen, setIsCreateFlashcardModalOpen] = useState(false);
+
+  // Handle flashcard creation
+  const handleCreateFlashcard = async ({ frontText, backText }) => {
+    try {
+      if (!user) throw new Error('User not authenticated');
+      if (!selectedTopic) throw new Error('Please select a topic first');
+
+      const newFlashcard = {
+        frontText,
+        backText,
+        topicId: selectedTopic.id,
+        createdAt: new Date().toISOString(),
+        correctCount: 0,
+        incorrectCount: 0
+      };
+
+      const flashcardsRef = collection(db, `users/${user.uid}/subjects/${subjectId}/flashcards`);
+      const docRef = await addDoc(flashcardsRef, newFlashcard);
+
+      // Update local state
+      setFlashcards(prev => [...prev, { id: docRef.id, ...newFlashcard }]);
+
+      // Update subject's card count
+      const subjectRef = doc(db, `users/${user.uid}/subjects/${subjectId}`);
+      await updateDoc(subjectRef, {
+        cardCount: (subject?.cardCount || 0) + 1
+      });
+      setSubject(prev => ({
+        ...prev,
+        cardCount: (prev?.cardCount || 0) + 1
+      }));
+
+    } catch (error) {
+      console.error("Error creating flashcard:", error);
+      throw error;
+    }
+  };
 
   // Apply theme
   useEffect(() => {
@@ -272,7 +310,33 @@ function SubjectView() {
                   {filteredFlashcards.length} flashcards
                 </p>
               </div>
+              <button
+                onClick={() => setIsCreateFlashcardModalOpen(true)}
+                className="btn-primary btn-lg"
+                disabled={!selectedTopic}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <span style={{ fontSize: '20px' }}>+</span>
+                Create New Flashcard
+              </button>
             </div>
+
+            {!selectedTopic && (
+              <div style={{
+                padding: '12px',
+                marginBottom: '24px',
+                borderRadius: 'var(--radius)',
+                background: 'color-mix(in srgb, var(--secondary) 10%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--secondary) 20%, transparent)',
+                color: 'var(--secondary)',
+              }}>
+                Please select a topic to create flashcards
+              </div>
+            )}
 
             {/* Flashcard Grid */}
             <div style={{
@@ -326,6 +390,13 @@ function SubjectView() {
         isOpen={isTopicModalOpen}
         onClose={() => setIsTopicModalOpen(false)}
         onSubmit={handleCreateTopic}
+      />
+
+      {/* Create Flashcard Modal */}
+      <CreateFlashcardModal
+        isOpen={isCreateFlashcardModalOpen}
+        onClose={() => setIsCreateFlashcardModalOpen(false)}
+        onSubmit={handleCreateFlashcard}
       />
     </div>
   );
