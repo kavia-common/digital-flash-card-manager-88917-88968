@@ -12,7 +12,7 @@ import PracticeView from './pages/PracticeView';
  * App is the entry component handling routing and rendering the main layout
  * for the Digital Flash Card Manager. It applies the Ocean Professional theme.
  */
-function LandingPage() {
+function HomePage() {
   const [theme, setTheme] = useState('light');
 
   // Apply theme to the html element for CSS var switching
@@ -171,7 +171,7 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={user ? <Navigate to="/home" /> : <LandingPage />} />
+      <Route path="/" element={user ? <Navigate to="/home" /> : <HomePage />} />
       <Route path="/login" element={user ? <Navigate to="/home" /> : <Login />} />
       <Route path="/home" element={<Home />} />
       <Route path="/subjects/:subjectId/practice/:topicId" element={<PracticeView />} />
