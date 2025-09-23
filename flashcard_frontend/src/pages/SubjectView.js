@@ -6,6 +6,7 @@ import FlashcardStats from '../components/flashcard/FlashcardStats';
 import Navbar from '../components/layout/Navbar';
 import ProgressBar from '../components/ui/ProgressBar';
 import CreateTopicModal from '../modals/CreateTopicModal';
+import DeleteTopicModal from '../modals/DeleteTopicModal';
 import CreateFlashcardModal from '../modals/CreateFlashcardModal';
 import { 
   collection, 
@@ -37,6 +38,8 @@ function SubjectView() {
   const [flashcards, setFlashcards] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
+  const [isDeleteTopicModalOpen, setIsDeleteTopicModalOpen] = useState(false);
+  const [topicToDelete, setTopicToDelete] = useState(null);
   const [theme, setTheme] = useState('light');
   const [isCreateFlashcardModalOpen, setIsCreateFlashcardModalOpen] = useState(false);
 
@@ -250,19 +253,10 @@ function SubjectView() {
                   {topic.title}
                 </button>
                 <button
-                  onClick={async (e) => {
+                  onClick={(e) => {
                     e.stopPropagation();
-                    if (window.confirm(`Are you sure you want to delete "${topic.title}"?`)) {
-                      try {
-                        await deleteDoc(doc(db, `users/${user.uid}/subjects/${subjectId}/topics/${topic.id}`));
-                        setTopics(prev => prev.filter(t => t.id !== topic.id));
-                        if (selectedTopic?.id === topic.id) {
-                          setSelectedTopic(null);
-                        }
-                      } catch (error) {
-                        console.error("Error deleting topic:", error);
-                      }
-                    }
+                    setTopicToDelete(topic);
+                    setIsDeleteTopicModalOpen(true);
                   }}
                   className="btn-ghost"
                   style={{
@@ -397,6 +391,52 @@ function SubjectView() {
         isOpen={isCreateFlashcardModalOpen}
         onClose={() => setIsCreateFlashcardModalOpen(false)}
         onSubmit={handleCreateFlashcard}
+      />
+
+      {/* Delete Topic Modal */}
+      <DeleteTopicModal
+        isOpen={isDeleteTopicModalOpen}
+        onClose={() => {
+          setIsDeleteTopicModalOpen(false);
+          setTopicToDelete(null);
+        }}
+        onConfirm={async () => {
+          try {
+            // Delete all flashcards in the topic
+            const flashcardsRef = collection(db, `users/${user.uid}/subjects/${subjectId}/flashcards`);
+            const q = query(flashcardsRef, where("topicId", "==", topicToDelete.id));
+            const snapshot = await getDocs(q);
+            
+            // Delete each flashcard
+            await Promise.all(snapshot.docs.map(doc => 
+              deleteDoc(doc.ref)
+            ));
+
+            // Update subject's card count
+            const subjectRef = doc(db, `users/${user.uid}/subjects/${subjectId}`);
+            await updateDoc(subjectRef, {
+              cardCount: (subject?.cardCount || 0) - snapshot.docs.length
+            });
+
+            // Delete the topic
+            await deleteDoc(doc(db, `users/${user.uid}/subjects/${subjectId}/topics/${topicToDelete.id}`));
+            
+            // Update local state
+            setTopics(prev => prev.filter(t => t.id !== topicToDelete.id));
+            if (selectedTopic?.id === topicToDelete.id) {
+              setSelectedTopic(null);
+            }
+            setSubject(prev => ({
+              ...prev,
+              cardCount: (prev?.cardCount || 0) - snapshot.docs.length
+            }));
+            setFlashcards(prev => prev.filter(card => card.topicId !== topicToDelete.id));
+          } catch (error) {
+            console.error("Error deleting topic:", error);
+            throw new Error('Failed to delete topic and its flashcards');
+          }
+        }}
+        topic={topicToDelete}
       />
     </div>
   );
