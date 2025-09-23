@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
 import { useAuth } from '../context/AuthContext';
 import { collection, getDocs, addDoc, query, where, deleteDoc, doc } from 'firebase/firestore';
@@ -18,7 +18,7 @@ function Home() {
   const { user, logout, userType } = useAuth();
   const navigate = useNavigate();
   const [subjects, setSubjects] = useState([]);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState('');
   const [error, setError] = useState('');
@@ -56,14 +56,6 @@ function Home() {
     fetchSubjects();
   }, [user, navigate]);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error("Error logging out:", error);
-    }
-  };
 
   // Maximum subjects allowed for free users
   const MAX_FREE_SUBJECTS = 3;

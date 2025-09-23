@@ -384,6 +384,8 @@ function SubjectView() {
                   key={flashcard.id}
                   frontText={flashcard.frontText}
                   topic={topics.find(t => t.id === flashcard.topicId)?.title}
+                  correct={flashcard.correctCount}
+                  incorrect={flashcard.incorrectCount}
                   onClick={() => {
                     setFlashcardToEdit(flashcard);
                     setIsCreateFlashcardModalOpen(true);

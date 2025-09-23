@@ -16,7 +16,7 @@ function PracticeView() {
   const navigate = useNavigate();
   const { subjectId, topicId } = useParams();
   
-  const [subject, setSubject] = useState(null);
+  const [, setSubject] = useState(null);
   const [flashcards, setFlashcards] = useState([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -243,7 +243,7 @@ function PracticeView() {
   const currentCard = flashcards[currentCardIndex];
   const currentStats = answerStats[currentCard.id] || { correct: 0, incorrect: 0 };
   const totalAttempts = currentStats.correct + currentStats.incorrect;
-  const successRate = totalAttempts > 0 ? (currentStats.correct / totalAttempts) * 100 : 0;
+
 
   return (
     <div className="App">
@@ -329,13 +329,6 @@ function PracticeView() {
                     </span>
                     {card.frontText}
                   </div>
-                  {total > 0 && (
-                    <ProgressBar
-                      value={stats.correct}
-                      maxValue={total}
-                      label={`Success Rate: ${Math.round((stats.correct / total) * 100)}%`}
-                    />
-                  )}
                 </div>
               );
             })}
@@ -397,13 +390,6 @@ function PracticeView() {
                 }}>
                   {currentCard.frontText}
                 </h2>
-                {totalAttempts > 0 && (
-                  <ProgressBar
-                    value={currentStats.correct}
-                    maxValue={totalAttempts}
-                    label={`Success Rate: ${successRate.toFixed(0)}%`}
-                  />
-                )}
               </div>
 
               {/* Back Side */}
