@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
 import { useAuth } from '../context/AuthContext';
+import FlashcardCard from '../components/flashcard/FlashcardCard';
 import FlashcardStats from '../components/flashcard/FlashcardStats';
 import Navbar from '../components/layout/Navbar';
 import ProgressBar from '../components/ui/ProgressBar';
@@ -42,6 +43,30 @@ function SubjectView() {
   const [topicToDelete, setTopicToDelete] = useState(null);
   const [theme, setTheme] = useState('light');
   const [isCreateFlashcardModalOpen, setIsCreateFlashcardModalOpen] = useState(false);
+  const [flashcardToEdit, setFlashcardToEdit] = useState(null);
+
+  const handleDeleteFlashcard = async (flashcardId) => {
+    try {
+      // Delete the flashcard from Firestore
+      await deleteDoc(doc(db, `users/${user.uid}/subjects/${subjectId}/flashcards/${flashcardId}`));
+      
+      // Update subject's card count
+      const subjectRef = doc(db, `users/${user.uid}/subjects/${subjectId}`);
+      await updateDoc(subjectRef, {
+        cardCount: (subject?.cardCount || 0) - 1
+      });
+
+      // Update local state
+      setFlashcards(prev => prev.filter(card => card.id !== flashcardId));
+      setSubject(prev => ({
+        ...prev,
+        cardCount: (prev?.cardCount || 0) - 1
+      }));
+    } catch (error) {
+      console.error("Error deleting flashcard:", error);
+      throw new Error('Failed to delete flashcard');
+    }
+  };
 
   // Handle flashcard creation
   const handleCreateFlashcard = async ({ frontText, backText }) => {
@@ -355,40 +380,30 @@ function SubjectView() {
               gap: '24px'
             }}>
               {filteredFlashcards.map(flashcard => (
-                <div
+                <FlashcardCard
                   key={flashcard.id}
-                  className="feature"
-                  style={{
-                    position: 'relative',
-                    minHeight: '200px',
-                    cursor: 'pointer'
+                  frontText={flashcard.frontText}
+                  topic={topics.find(t => t.id === flashcard.topicId)?.title}
+                  onClick={() => {
+                    setFlashcardToEdit(flashcard);
+                    setIsCreateFlashcardModalOpen(true);
                   }}
+                  onEdit={() => {
+                    setFlashcardToEdit(flashcard);
+                    setIsCreateFlashcardModalOpen(true);
+                  }}
+                  onDelete={() => {
+                    if (window.confirm('Are you sure you want to delete this flashcard? This action cannot be undone.')) {
+                      handleDeleteFlashcard(flashcard.id);
+                    }
+                  }}
+                  style={{ position: 'relative' }}
                 >
-                  <div style={{
-                    position: 'relative',
-                    zIndex: 1,
-                    height: '100%',
-                    padding: '16px'
-                  }}>
-                    <h3 className="feature-title" style={{
-                      margin: 0,
-                      fontSize: '18px',
-                      fontWeight: '600',
-                      marginBottom: '12px'
-                    }}>
-                      {flashcard.frontText}
-                    </h3>
-                    {topics.find(t => t.id === flashcard.topicId)?.title && (
-                      <div className="pill">
-                        {topics.find(t => t.id === flashcard.topicId)?.title}
-                      </div>
-                    )}
-                    <FlashcardStats
-                      correct={flashcard.correctCount || 0}
-                      incorrect={flashcard.incorrectCount || 0}
-                    />
-                  </div>
-                </div>
+                  <FlashcardStats
+                    correct={flashcard.correctCount || 0}
+                    incorrect={flashcard.incorrectCount || 0}
+                  />
+                </FlashcardCard>
               ))}
             </div>
           </div>
@@ -405,8 +420,12 @@ function SubjectView() {
       {/* Create Flashcard Modal */}
       <CreateFlashcardModal
         isOpen={isCreateFlashcardModalOpen}
-        onClose={() => setIsCreateFlashcardModalOpen(false)}
+        onClose={() => {
+          setIsCreateFlashcardModalOpen(false);
+          setFlashcardToEdit(null);
+        }}
         onSubmit={handleCreateFlashcard}
+        initialData={flashcardToEdit}
       />
 
       {/* Delete Topic Modal */}

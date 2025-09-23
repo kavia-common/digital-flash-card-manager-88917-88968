@@ -8,6 +8,7 @@ function FlashcardCard({
   frontText,
   topic,
   onEdit,
+  onDelete,
   onClick,
   className = '',
   ...props
@@ -50,19 +51,37 @@ function FlashcardCard({
               {topic}
             </div>
           )}
-          <button 
-            className="btn-ghost"
-            style={{
-              padding: '6px',
-              minWidth: 'unset',
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit?.();
-            }}
-          >
-            ✏️
-          </button>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <button 
+              className="btn-ghost"
+              style={{
+                padding: '6px',
+                minWidth: 'unset',
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.();
+              }}
+              aria-label="Edit flashcard"
+            >
+              ✏️
+            </button>
+            <button 
+              className="btn-ghost"
+              style={{
+                padding: '6px',
+                minWidth: 'unset',
+                color: 'var(--error)',
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.();
+              }}
+              aria-label="Delete flashcard"
+            >
+              🗑️
+            </button>
+          </div>
         </div>
         
         <div style={{
