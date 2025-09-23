@@ -304,19 +304,35 @@ function SubjectView() {
                   {filteredFlashcards.length} flashcards
                 </p>
               </div>
-              <button
-                onClick={() => setIsCreateFlashcardModalOpen(true)}
-                className="btn-primary btn-lg"
-                disabled={!selectedTopic}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                <span style={{ fontSize: '20px' }}>+</span>
-                Create New Flashcard
-              </button>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {filteredFlashcards.length > 0 && (
+                  <button
+                    onClick={() => navigate(`/subjects/${subjectId}/practice/${selectedTopic ? selectedTopic.id : 'all'}`)}
+                    className="btn-inverse btn-lg"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <span style={{ fontSize: '20px' }}>▶️</span>
+                    Practice
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsCreateFlashcardModalOpen(true)}
+                  className="btn-primary btn-lg"
+                  disabled={!selectedTopic}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <span style={{ fontSize: '20px' }}>+</span>
+                  Create New Flashcard
+                </button>
+              </div>
             </div>
 
             {!selectedTopic && (

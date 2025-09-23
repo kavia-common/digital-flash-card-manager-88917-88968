@@ -29,16 +29,6 @@ function Navbar({ theme, onToggleTheme }) {
             <>
               <div style={{ display: 'flex', gap: '16px' }}>
                 <Link 
-                  to="/practice" 
-                  className="btn-ghost"
-                  style={{
-                    color: 'var(--muted)',
-                    fontWeight: '600'
-                  }}
-                >
-                  Practice
-                </Link>
-                <Link 
                   to="/home" 
                   className="btn-ghost"
                   style={{
@@ -184,7 +174,7 @@ function Navbar({ theme, onToggleTheme }) {
             onClick={onToggleTheme}
             aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
           >
-            {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+            {theme === 'light' ? '🌙' : '☀️'}
           </button>
         </div>
       </div>
