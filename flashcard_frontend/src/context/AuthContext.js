@@ -54,17 +54,34 @@ export function AuthProvider({ children }) {
 
   // Subscribe to auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        await fetchUserType(currentUser.uid);
-      } else {
-        setUserType('free');
-      }
+    let unsubscribe;
+    try {
+      unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        try {
+          setUser(currentUser);
+          if (currentUser) {
+            await fetchUserType(currentUser.uid);
+          } else {
+            setUserType('free');
+          }
+        } catch (error) {
+          console.error('Error in auth state change handler:', error);
+          setUser(null);
+          setUserType('free');
+        } finally {
+          setLoading(false);
+        }
+      });
+    } catch (error) {
+      console.error('Error setting up auth state listener:', error);
       setLoading(false);
-    });
+    }
 
-    return unsubscribe;
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const value = {
