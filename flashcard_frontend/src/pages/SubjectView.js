@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
 import { useAuth } from '../context/AuthContext';
 import FlashcardStats from '../components/flashcard/FlashcardStats';
 import Navbar from '../components/layout/Navbar';
 import ProgressBar from '../components/ui/ProgressBar';
+import CreateFlashcardModal from '../modals/CreateFlashcardModal';
+import CreateTopicModal from '../modals/CreateTopicModal';
 import { 
   collection, 
   getDocs, 
@@ -26,7 +28,6 @@ Modal.setAppElement('#root');
  * Subject view component showing topics in sidebar and flashcards in main area
  */
 function SubjectView() {
-  // ... [Previous state and hooks remain the same until the return statement]
   const { user, userType } = useAuth();
   const navigate = useNavigate();
   const { subjectId } = useParams();
@@ -35,52 +36,84 @@ function SubjectView() {
   const [topics, setTopics] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
-  
-  // Topic modal state
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
-  const [newTopicName, setNewTopicName] = useState('');
-  
-  // Flashcard modal state
-  const [isFlashcardModalOpen, setIsFlashcardModalOpen] = useState(false);
-  const [frontText, setFrontText] = useState('');
-  const [backText, setBackText] = useState('');
-  const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingFlashcard, setEditingFlashcard] = useState(null);
-  
-  // Focused flashcard modal state
-  const [focusedCard, setFocusedCard] = useState(null);
-  const [isFocusModalOpen, setIsFocusModalOpen] = useState(false);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editedFrontText, setEditedFrontText] = useState('');
-  const [editedBackText, setEditedBackText] = useState('');
   const [theme, setTheme] = useState('light');
-
-  // ... [Previous useEffects and handlers remain the same]
-
-  // Calculate success rate data
-  const successRateData = React.useMemo(() => {
-    if (flashcards.length === 0) return null;
-    
-    const totalCorrect = flashcards.reduce((sum, card) => sum + (card.correctCount || 0), 0);
-    const totalIncorrect = flashcards.reduce((sum, card) => sum + (card.incorrectCount || 0), 0);
-    const totalAttempts = totalCorrect + totalIncorrect;
-    const successRate = totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
-    
-    return {
-      totalCorrect,
-      totalAttempts,
-      successRate
-    };
-  }, [flashcards]);
 
   // Apply theme
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // ... [Previous methods remain the same]
+  // Fetch subject, topics, and flashcards data
+  useEffect(() => {
+    if (!user || !subjectId) return;
+
+    const fetchData = async () => {
+      try {
+        // Fetch subject details
+        const subjectDoc = await getDoc(doc(db, `users/${user.uid}/subjects/${subjectId}`));
+        if (!subjectDoc.exists()) {
+          navigate('/home');
+          return;
+        }
+        setSubject({ id: subjectDoc.id, ...subjectDoc.data() });
+
+        // Fetch topics
+        const topicsSnapshot = await getDocs(collection(db, `users/${user.uid}/subjects/${subjectId}/topics`));
+        const topicsData = topicsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setTopics(topicsData);
+
+        // Fetch flashcards
+        const flashcardsRef = collection(db, `users/${user.uid}/subjects/${subjectId}/flashcards`);
+        const flashcardsSnapshot = await getDocs(flashcardsRef);
+        const flashcardsData = flashcardsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setFlashcards(flashcardsData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
+  }, [user, subjectId, navigate]);
+
+  // Handle topic creation
+  const handleCreateTopic = async (topicName) => {
+    // Check topic limit for free users
+    if (userType === 'free' && topics.length >= 3) {
+      throw new Error('Free users can only create up to 3 topics. Please upgrade to create more.');
+    }
+
+    // Check for duplicate topic names
+    const topicsRef = collection(db, `users/${user.uid}/subjects/${subjectId}/topics`);
+    const q = query(topicsRef, where("title", "==", topicName));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      throw new Error('A topic with this name already exists');
+    }
+
+    // Create new topic
+    const newTopic = {
+      title: topicName,
+      createdAt: new Date().toISOString(),
+    };
+
+    const docRef = await addDoc(topicsRef, newTopic);
+    const topic = { id: docRef.id, ...newTopic };
+    setTopics(prev => [...prev, topic]);
+    setSelectedTopic(topic);
+  };
+
+  // Handle flashcard filtering
+  const filteredFlashcards = selectedTopic
+    ? flashcards.filter(card => card.topicId === selectedTopic.id)
+    : flashcards;
 
   return (
     <div className="App">
@@ -209,6 +242,17 @@ function SubjectView() {
               </div>
             ))}
           </div>
+
+          {userType === 'free' && (
+            <ProgressBar
+              value={topics.length}
+              maxValue={3}
+              label={`${topics.length}/3 Topics Used`}
+              error={topics.length >= 3}
+              secondaryLabel={topics.length >= 3 ? "Topic limit reached" : undefined}
+              style={{ marginTop: '24px' }}
+            />
+          )}
         </aside>
 
         {/* Main Content Area */}
@@ -218,59 +262,71 @@ function SubjectView() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '24px'
+              marginBottom: '32px'
             }}>
               <div>
-                {/* Topics limit progress for free users */}
-                {userType === 'free' && (
-                  <ProgressBar
-                    value={topics.length}
-                    maxValue={3}
-                    label={`${topics.length}/3 Topics Used`}
-                    error={topics.length >= 3}
-                    secondaryLabel={topics.length >= 3 ? "Topic limit reached" : undefined}
-                  />
-                )}
-                
-                {/* Success rate progress for free users */}
-                {userType === 'free' && successRateData && (
-                  <ProgressBar
-                    value={successRateData.totalCorrect}
-                    maxValue={successRateData.totalAttempts}
-                    label={`Success Rate: ${successRateData.successRate}%`}
-                  />
-                )}
-                
                 <h1 className="section-title">
-                  {selectedTopic ? selectedTopic.title : 'All Flashcards'}
+                  {subject?.title} - {selectedTopic ? selectedTopic.title : 'All Topics'}
                 </h1>
+                <p className="section-subtitle">
+                  {filteredFlashcards.length} flashcards
+                </p>
               </div>
-              
-              {topics.length === 0 && (
-                <button 
-                  className="btn-primary"
-                  onClick={() => setIsTopicModalOpen(true)}
-                >
-                  + Create Topic
-                </button>
-              )}
-              {topics.length > 0 && selectedTopic && (
-                <button 
-                  className="btn-primary"
-                  onClick={() => setIsFlashcardModalOpen(true)}
-                >
-                  + Create Flashcard
-                </button>
-              )}
             </div>
 
-            {/* Rest of the component remains the same */}
-            {/* ... [Previous JSX for flashcards grid and modals] */}
+            {/* Flashcard Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '24px'
+            }}>
+              {filteredFlashcards.map(flashcard => (
+                <div
+                  key={flashcard.id}
+                  className="feature"
+                  style={{
+                    position: 'relative',
+                    minHeight: '200px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    height: '100%',
+                    padding: '16px'
+                  }}>
+                    <h3 className="feature-title" style={{
+                      margin: 0,
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      marginBottom: '12px'
+                    }}>
+                      {flashcard.frontText}
+                    </h3>
+                    {topics.find(t => t.id === flashcard.topicId)?.title && (
+                      <div className="pill">
+                        {topics.find(t => t.id === flashcard.topicId)?.title}
+                      </div>
+                    )}
+                    <FlashcardStats
+                      correct={flashcard.correctCount || 0}
+                      incorrect={flashcard.incorrectCount || 0}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </main>
       </div>
 
-      {/* Previous modals remain the same */}
+      {/* Create Topic Modal */}
+      <CreateTopicModal
+        isOpen={isTopicModalOpen}
+        onClose={() => setIsTopicModalOpen(false)}
+        onSubmit={handleCreateTopic}
+      />
     </div>
   );
 }

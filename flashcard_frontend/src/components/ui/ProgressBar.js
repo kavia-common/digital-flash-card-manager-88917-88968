@@ -51,6 +51,7 @@ function ProgressBar({
         boxShadow: 'var(--shadow-sm)',
         padding: '12px',
         margin: '10px 0',
+        width: '100%'
       }}
     >
       {/* Header row with label and optional action */}
